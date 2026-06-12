@@ -1,0 +1,8 @@
+-- SELL ALL
+local Networking = require(game.ReplicatedStorage.SharedModules.Networking)
+
+local preview = Networking.NPCS.PreviewSellAll:Fire()
+
+if preview and (preview.FruitCount or 0) > 0 then
+    Networking.NPCS.SellAll:Fire()
+end
