@@ -1,0 +1,82 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Gardens = workspace:WaitForChild("Gardens")
+
+-- Cari plot milik player
+local function GetMyPlot()
+    for i = 1, 6 do
+        local Plot = Gardens:FindFirstChild("Plot" .. i)
+
+        if Plot and Plot:GetAttribute("Owner") == LocalPlayer.Name then
+            return Plot
+        end
+    end
+
+    return nil
+end
+
+while task.wait(5) do
+    local MyPlot = GetMyPlot()
+
+    if not MyPlot then
+        warn("❌ Plot milikmu tidak ditemukan!")
+        continue
+    end
+
+    local Plants = MyPlot:FindFirstChild("Plants")
+
+    if not Plants then
+        warn("❌ Folder Plants tidak ditemukan!")
+        continue
+    end
+
+    local harvested = 0
+
+    for _, Plant in ipairs(Plants:GetChildren()) do
+        -- Harvest Plant
+        local HarvestPart = Plant:FindFirstChild("HarvestPart")
+
+        if HarvestPart then
+            local HarvestPrompt = HarvestPart:FindFirstChild("HarvestPrompt")
+
+            if HarvestPrompt and HarvestPrompt:IsA("ProximityPrompt") then
+                pcall(function()
+                    fireproximityprompt(HarvestPrompt)
+                end)
+
+                harvested += 1
+                task.wait(0.05)
+            end
+        end
+
+        -- Harvest semua Fruit di dalam Plant
+        local Fruits = Plant:FindFirstChild("Fruits")
+
+        if Fruits then
+            for _, Fruit in ipairs(Fruits:GetChildren()) do
+                local FruitHarvestPart = Fruit:FindFirstChild("HarvestPart")
+
+                if FruitHarvestPart then
+                    local FruitPrompt = FruitHarvestPart:FindFirstChild("HarvestPrompt")
+
+                    if FruitPrompt and FruitPrompt:IsA("ProximityPrompt") then
+                        pcall(function()
+                            fireproximityprompt(FruitPrompt)
+                        end)
+
+                        harvested += 1
+                        task.wait(0.05)
+                    end
+                end
+            end
+        end
+    end
+
+    print(string.format(
+        "✅ [%s] Harvest selesai | Plants: %d | Total Prompt: %d",
+        MyPlot.Name,
+        #Plants:GetChildren(),
+        harvested
+    ))
+end
