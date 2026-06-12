@@ -1,21 +1,3 @@
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-local Gardens = workspace:WaitForChild("Gardens")
-
--- Cari plot milik player
-local function GetMyPlot()
-    for i = 1, 6 do
-        local Plot = Gardens:FindFirstChild("Plot" .. i)
-
-        if Plot and Plot:GetAttribute("Owner") == LocalPlayer.Name then
-            return Plot
-        end
-    end
-
-    return nil
-end
-
 while task.wait(5) do
     local MyPlot = GetMyPlot()
 
@@ -46,7 +28,6 @@ while task.wait(5) do
                 end)
 
                 harvested += 1
-                task.wait(0.05)
             end
         end
 
