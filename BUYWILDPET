@@ -1,21 +1,27 @@
---// AUTO BUY WILD PET (WHITELIST)
-
 --------------------------------------------------
 -- SETTINGS
 --------------------------------------------------
 
-local CHECK_DELAY = 2 -- detik
+local CHECK_DELAY = 2
 
 local WHITELIST = {
     ["Raccoon"] = true,
     ["Golden Dragonfly"] = true,
     ["Unicorn"] = true,
     ["Bunny"] = true,
-
-    -- Tambahkan pet lain jika ingin dibeli
-    -- ["Red Fox"] = true,
-    -- ["Bunny"] = true,
 }
+
+--------------------------------------------------
+-- SERVICES
+--------------------------------------------------
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local function GetRoot()
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    return Character:WaitForChild("HumanoidRootPart")
+end
 
 --------------------------------------------------
 -- PATH
@@ -40,11 +46,28 @@ while task.wait(CHECK_DELAY) do
                 local prompt = root:FindFirstChild("BuyPrompt")
 
                 if prompt and prompt:IsA("ProximityPrompt") then
+                    local hrp = GetRoot()
+
+                    -- Simpan posisi awal
+                    local oldCFrame = hrp.CFrame
+
+                    -- Teleport ke pet
+                    hrp.CFrame = root.CFrame + Vector3.new(0, 0, 3)
+                    task.wait(0.2)
+
+                    -- Buy
                     pcall(function()
                         fireproximityprompt(prompt)
                     end)
 
                     print("[AUTO BUY] " .. petName)
+
+                    task.wait(0.3)
+
+                    -- Kembali ke posisi semula
+                    hrp.CFrame = oldCFrame
+
+                    task.wait(0.2)
                 end
             end
         end
