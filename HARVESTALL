@@ -21,7 +21,7 @@ local function GetMyPlot()
     return nil
 end
 
-while task.wait(5) do
+while task.wait(0) do
     local MyPlot = GetMyPlot()
 
     if not MyPlot then
@@ -51,7 +51,7 @@ while task.wait(5) do
                 end)
 
                 harvested += 1
-                task.wait(0.05)
+                task.wait(0.01)
             end
         end
 
