@@ -1,3 +1,4 @@
+--HARVEST JIKA ADA MUTASI
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
@@ -40,19 +41,21 @@ while task.wait(0) do
     local harvested = 0
 
     for _, Plant in ipairs(Plants:GetChildren()) do
-        -- Harvest Plant
-        local HarvestPart = Plant:FindFirstChild("HarvestPart")
+        -- Hanya harvest plant yang punya Mutation
+        if Plant:GetAttribute("Mutation") then
+            local HarvestPart = Plant:FindFirstChild("HarvestPart")
 
-        if HarvestPart then
-            local HarvestPrompt = HarvestPart:FindFirstChild("HarvestPrompt")
+            if HarvestPart then
+                local HarvestPrompt = HarvestPart:FindFirstChild("HarvestPrompt")
 
-            if HarvestPrompt and HarvestPrompt:IsA("ProximityPrompt") then
-                pcall(function()
-                    fireproximityprompt(HarvestPrompt)
-                end)
+                if HarvestPrompt and HarvestPrompt:IsA("ProximityPrompt") then
+                    pcall(function()
+                        fireproximityprompt(HarvestPrompt)
+                    end)
 
-                harvested += 1
-                task.wait(0.01)
+                    harvested += 1
+                    task.wait(0.01)
+                end
             end
         end
 
@@ -61,6 +64,11 @@ while task.wait(0) do
 
         if Fruits then
             for _, Fruit in ipairs(Fruits:GetChildren()) do
+
+                -- Skip jika tidak punya Mutation
+                if not Fruit:GetAttribute("Mutation") then
+                    continue
+                end
 
                 -- Skip jika termasuk blacklist
                 local CorePartName = Fruit:GetAttribute("CorePartName")
@@ -81,7 +89,6 @@ while task.wait(0) do
                         end)
 
                         harvested += 1
-                    
                     end
                 end
             end
