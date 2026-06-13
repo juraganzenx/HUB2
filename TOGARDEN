@@ -1,0 +1,36 @@
+local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local LocalPlayer = Players.LocalPlayer
+
+while task.wait(10) do
+    local success, err = pcall(function()
+        local button = LocalPlayer
+            .PlayerGui
+            .TeleportButtons
+            .TeleportButtons
+            .GardenButton
+
+        -- Aktifkan UI Navigation
+        GuiService.GuiNavigationEnabled = true
+        GuiService.SelectedObject = button
+
+        task.wait(0.1)
+
+        -- Tekan tombol Confirm (Enter)
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+        task.wait()
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+
+        task.wait(0.1)
+
+        -- Bersihkan dan matikan UI Navigation
+        GuiService.SelectedObject = nil
+        GuiService.GuiNavigationEnabled = false
+    end)
+
+    if not success then
+        warn("Gagal mengklik GardenButton:", err)
+    end
+end
