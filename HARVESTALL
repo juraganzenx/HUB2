@@ -5,12 +5,13 @@ local Gardens = workspace:WaitForChild("Gardens")
 
 -- Blacklist Fruit berdasarkan CorePartName
 local BLACKLIST = {
-    Pineapple = true,
+    Blueberry = true,
+    Strawberry = true,
 }
 
 -- Cari plot milik player
 local function GetMyPlot()
-    for i = 1, 6 do
+    for i = 1, 8 do
         local Plot = Gardens:FindFirstChild("Plot" .. i)
 
         if Plot and Plot:GetAttribute("Owner") == LocalPlayer.Name then
