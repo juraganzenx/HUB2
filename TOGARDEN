@@ -1,36 +1,49 @@
+--/TELE KEGARDEN
 local Players = game:GetService("Players")
-local GuiService = game:GetService("GuiService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 
+--// Player
 local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
-while task.wait(10) do
-    local success, err = pcall(function()
-        local button = LocalPlayer
-            .PlayerGui
-            .TeleportButtons
-            .TeleportButtons
-            .GardenButton
+--// Gardens
+local Gardens = workspace:WaitForChild("Gardens")
 
-        -- Aktifkan UI Navigation
-        GuiService.GuiNavigationEnabled = true
-        GuiService.SelectedObject = button
+--// Cari plot milik kita
+local function GetMyPlot()
+    for i = 1, 8 do
+        local Plot = Gardens:FindFirstChild("Plot" .. i)
 
-        task.wait(0.1)
-
-        -- Tekan tombol Confirm (Enter)
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-        task.wait()
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-
-        task.wait(0.1)
-
-        -- Bersihkan dan matikan UI Navigation
-        GuiService.SelectedObject = nil
-        GuiService.GuiNavigationEnabled = false
-    end)
-
-    if not success then
-        warn("Gagal mengklik GardenButton:", err)
+        if Plot and Plot:GetAttribute("Owner") == LocalPlayer.Name then
+            return Plot
+        end
     end
+    return nil
+end
+
+--// Teleport ke Front_BedSection.BottomFace
+local function TeleportToMyPlot()
+    local Plot = GetMyPlot()
+    if not Plot then
+        warn("Plot tidak ditemukan!")
+        return
+    end
+
+    local targetPart = Plot
+        :WaitForChild("Visual")
+        :WaitForChild("FRONT_BedSection")
+        :WaitForChild("BottomFace")
+
+    if not targetPart then
+        warn("BottomFace tidak ditemukan!")
+        return
+    end
+
+    -- teleport sedikit di atas biar tidak clip
+    HumanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+end
+
+while true do
+    TeleportToMyPlot()
+    task.wait(30)
 end
