@@ -1,0 +1,51 @@
+--// AUTO BUY WILD PET (WHITELIST)
+
+--------------------------------------------------
+-- SETTINGS
+--------------------------------------------------
+
+local CHECK_DELAY = 2 -- detik
+
+local WHITELIST = {
+    ["Raccoon"] = true,
+    ["Golden Dragonfly"] = true,
+    ["Unicorn"] = true,
+
+    -- Tambahkan pet lain jika ingin dibeli
+    -- ["Red Fox"] = true,
+    -- ["Bunny"] = true,
+}
+
+--------------------------------------------------
+-- PATH
+--------------------------------------------------
+
+local WildPetSpawns = workspace
+    :WaitForChild("Map")
+    :WaitForChild("WildPetSpawns")
+
+--------------------------------------------------
+-- MAIN LOOP
+--------------------------------------------------
+
+while task.wait(CHECK_DELAY) do
+    for _, pet in ipairs(WildPetSpawns:GetChildren()) do
+        local petName = pet:GetAttribute("PetName")
+
+        if petName and WHITELIST[petName] then
+            local root = pet:FindFirstChild("RootPart")
+
+            if root then
+                local prompt = root:FindFirstChild("BuyPrompt")
+
+                if prompt and prompt:IsA("ProximityPrompt") then
+                    pcall(function()
+                        fireproximityprompt(prompt)
+                    end)
+
+                    print("[AUTO BUY] " .. petName)
+                end
+            end
+        end
+    end
+end
