@@ -10,6 +10,7 @@ local WHITELIST = {
     ["Raccoon"] = true,
     ["Golden Dragonfly"] = true,
     ["Unicorn"] = true,
+    ["Bunny"] = true,
 
     -- Tambahkan pet lain jika ingin dibeli
     -- ["Red Fox"] = true,
