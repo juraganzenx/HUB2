@@ -8,7 +8,9 @@ local WHITELIST = {
     ["Raccoon"] = true,
     ["Golden Dragonfly"] = true,
     ["Unicorn"] = true,
-    ["Bunny"] = true,
+    ["Black Dragon"] = true,
+    ["Ice Serpent"] = true,
+    
 }
 
 --------------------------------------------------
