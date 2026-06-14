@@ -12,8 +12,8 @@ local Gardens = workspace:WaitForChild("Gardens")
 local TARGET_SEEDS = {
     Strawberry = true,
     Apple = true,
-    -- Blueberry = true,
-    -- Tomato = true,
+    Blueberry = true,
+    Tomato = true,
 }
 
 getgenv().AutoShovel = false
