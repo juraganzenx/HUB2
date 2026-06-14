@@ -5,7 +5,7 @@ local LocalPlayer = Players.LocalPlayer
 local Backpack = LocalPlayer:WaitForChild("Backpack")
 
 -- GANTI WEBHOOK
-local WEBHOOK_URL = "YOUR_WEBHOOK_HERE"
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1476987739898515571/46Ws80ynwg5pYRC_ioOxxiYwwsS4odCDEySKSdZ8r4DNSsdrQPzTmjh49Tomq_1Wt1kO"
 
 local lastCount = {
     ["Raccoon"] = 0,
