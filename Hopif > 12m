@@ -1,0 +1,44 @@
+--// TELEPORT IF >12M
+
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- Batas minimum Sheckles player lain
+local MIN_SHECKLES = 12000000 -- 12 juta
+
+local function ShouldHopServer()
+	for _, player in ipairs(Players:GetPlayers()) do
+		-- Abaikan diri sendiri
+		if player ~= LocalPlayer then
+			local leaderstats = player:FindFirstChild("leaderstats")
+
+			if leaderstats then
+				local sheckles = leaderstats:FindFirstChild("Sheckles")
+
+				if sheckles and sheckles:IsA("IntValue") then
+					if sheckles.Value > MIN_SHECKLES then
+						warn(string.format(
+							"[ServerHop] %s memiliki %d Sheckles.",
+							player.Name,
+							sheckles.Value
+						))
+						return true
+					end
+				end
+			end
+		end
+	end
+
+	return false
+end
+
+while true do
+
+	if ShouldHopServer() then
+		-- Pindah ke server lain dari game yang sama
+		TeleportService:Teleport(game.PlaceId, LocalPlayer)
+	end
+	task.wait(60) -- Cek setiap 1 menit
+end
