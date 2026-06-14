@@ -1,0 +1,149 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Networking = require(game.ReplicatedStorage.SharedModules.Networking)
+local Gardens = workspace:WaitForChild("Gardens")
+
+--------------------------------------------------
+-- CONFIG
+--------------------------------------------------
+
+-- Tambahkan seed yang ingin di-auto shovel di sini
+local TARGET_SEEDS = {
+    Strawberry = true,
+    Apple = true,
+    Blueberry = true,
+    Tomato = true,
+}
+
+getgenv().AutoShovel = false
+
+--------------------------------------------------
+-- GET MY PLOT
+--------------------------------------------------
+
+local function GetMyPlot()
+    for i = 1, 8 do
+        local Plot = Gardens:FindFirstChild("Plot" .. i)
+
+        if Plot and Plot:GetAttribute("Owner") == LocalPlayer.Name then
+            return Plot
+        end
+    end
+
+    return nil
+end
+
+--------------------------------------------------
+-- GET SHOVEL TOOL
+--------------------------------------------------
+
+local function GetShovel()
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+    for _, Tool in ipairs(Character:GetChildren()) do
+        if Tool:IsA("Tool") and Tool:GetAttribute("Shovel") then
+            return Tool
+        end
+    end
+
+    return nil
+end
+
+--------------------------------------------------
+-- GUI
+--------------------------------------------------
+
+pcall(function()
+    LocalPlayer.PlayerGui:FindFirstChild("AutoShovelGUI"):Destroy()
+end)
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutoShovelGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer.PlayerGui
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 240, 0, 120)
+Frame.Position = UDim2.new(0.5, -120, 0.5, -60)
+Frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
+Frame.Parent = ScreenGui
+
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
+
+local Title = Instance.new("TextLabel")
+Title.BackgroundTransparency = 1
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Text = "Auto Multi Shovel"
+Title.TextScaled = true
+Title.Font = Enum.Font.GothamBold
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Parent = Frame
+
+local Toggle = Instance.new("TextButton")
+Toggle.Size = UDim2.new(0.8, 0, 0, 40)
+Toggle.Position = UDim2.new(0.1, 0, 0, 42)
+Toggle.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+Toggle.Text = "OFF"
+Toggle.TextScaled = true
+Toggle.Font = Enum.Font.GothamBold
+Toggle.TextColor3 = Color3.new(1, 1, 1)
+Toggle.Parent = Frame
+
+Instance.new("UICorner", Toggle).CornerRadius = UDim.new(0, 6)
+
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.new(0, 24, 0, 24)
+Close.Position = UDim2.new(1, -28, 0, 4)
+Close.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+Close.Text = "X"
+Close.TextScaled = true
+Close.Font = Enum.Font.GothamBold
+Close.TextColor3 = Color3.new(1, 1, 1)
+Close.Parent = Frame
+
+Instance.new("UICorner", Close).CornerRadius = UDim.new(1, 0)
+
+Toggle.MouseButton1Click:Connect(function()
+    getgenv().AutoShovel = not getgenv().AutoShovel
+
+    if getgenv().AutoShovel then
+        Toggle.Text = "ON"
+        Toggle.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+    else
+        Toggle.Text = "OFF"
+        Toggle.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+    end
+end)
+
+Close.MouseButton1Click:Connect(function()
+    getgenv().AutoShovel = false
+    ScreenGui:Destroy()
+end)
+
+--------------------------------------------------
+-- AUTO SHOVEL LOOP
+--------------------------------------------------
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if not getgenv().AutoShovel then
+            continue
+        end
+
+        local Plot = GetMyPlot()
+        if not Plot then
+            continue
+        end
+
+        local Plants = Plot:FindFirstChild("Plants")
+        if not Plants then
+            continue
+        end
+
+        local Shovel = GetShovel()
+        if not Shovel then
+    
