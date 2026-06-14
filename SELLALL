@@ -1,9 +1,38 @@
--- SELL ALL
-local Networking = require(game.ReplicatedStorage.SharedModules.Networking)
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local preview = Networking.NPCS.PreviewSellAll:Fire()
-while task.wait(2) do
-if preview and (preview.FruitCount or 0) > 0 then
-    Networking.NPCS.SellAll:Fire()
+local LocalPlayer = Players.LocalPlayer
+
+-- Tunggu character spawn
+if not LocalPlayer.Character then
+    LocalPlayer.CharacterAdded:Wait()
 end
-end
+
+LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+
+-- Tunggu module tersedia
+local SharedModules = ReplicatedStorage:WaitForChild("SharedModules")
+local Networking = require(SharedModules:WaitForChild("Networking"))
+
+-- Tunggu networking siap
+repeat
+    task.wait()
+until Networking
+    and Networking.NPCS
+    and Networking.NPCS.PreviewSellAll
+    and Networking.NPCS.SellAll
+
+-- Auto Sell
+task.spawn(function()
+    while task.wait(2) do
+        local success, preview = pcall(function()
+            return Networking.NPCS.PreviewSellAll:Fire()
+        end)
+
+        if success and preview and (preview.FruitCount or 0) > 0 then
+            pcall(function()
+                Networking.NPCS.SellAll:Fire()
+            end)
+        end
+    end
+end)
