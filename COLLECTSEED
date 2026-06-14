@@ -1,0 +1,36 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Map = workspace:WaitForChild("Map")
+local SeedPackSpawn = Map:WaitForChild("SeedPackSpawnServerLocations")
+
+local function CollectSeedPack()
+    local Part = SeedPackSpawn:FindFirstChild("Part")
+
+    if not Part then
+        return
+    end
+
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+    -- Teleport ke Part
+    HumanoidRootPart.CFrame = Part.CFrame + Vector3.new(0, 3, 0)
+
+    -- Spam ProximityPrompt
+    local Prompt = Part:FindFirstChild("ProximityPrompt")
+    if Prompt then
+        while Part.Parent and Prompt.Parent do
+            pcall(function()
+                fireproximityprompt(Prompt)
+            end)
+            task.wait(0.05)
+        end
+    end
+end
+
+-- Saat ada child baru
+SeedPackSpawn.ChildAdded:Connect(function(child)
+    task.wait(0.1)
+    CollectSeedPack()
+end)
