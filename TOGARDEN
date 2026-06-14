@@ -1,49 +1,117 @@
---/TELE KEGARDEN
+--// Services
 local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 --// Player
 local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
---// Gardens
-local Gardens = workspace:WaitForChild("Gardens")
+--------------------------------------------------
+-- GUI
+--------------------------------------------------
 
---// Cari plot milik kita
-local function GetMyPlot()
-    for i = 1, 8 do
-        local Plot = Gardens:FindFirstChild("Plot" .. i)
+local Enabled = true -- Default ON
 
-        if Plot and Plot:GetAttribute("Owner") == LocalPlayer.Name then
-            return Plot
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "TeleportToggleGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
+
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0, 140, 0, 40)
+ToggleButton.Position = UDim2.new(0, 20, 0.5, -20)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+ToggleButton.TextColor3 = Color3.new(1,1,1)
+ToggleButton.TextScaled = true
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.Text = "Teleport : ON"
+ToggleButton.Parent = ScreenGui
+
+ToggleButton.MouseButton1Click:Connect(function()
+    Enabled = not Enabled
+
+    if Enabled then
+        ToggleButton.Text = "Teleport : ON"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+    else
+        ToggleButton.Text = "Teleport : OFF"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    end
+end)
+
+--------------------------------------------------
+-- FUNCTIONS
+--------------------------------------------------
+
+local function ClickSeed()
+    local success, err = pcall(function()
+        local button = PlayerGui
+            .TeleportButtons
+            .TeleportButtons
+            .SeedsButton
+
+        GuiService.GuiNavigationEnabled = true
+        GuiService.SelectedObject = button
+
+        task.wait(0.1)
+
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+        task.wait()
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+
+        task.wait(0.1)
+
+        GuiService.SelectedObject = nil
+        GuiService.GuiNavigationEnabled = false
+    end)
+
+    if not success then
+        warn("ClickSeed Error:", err)
+    end
+end
+
+local function ClickGarden()
+    local success, err = pcall(function()
+        local button = PlayerGui
+            .TeleportButtons
+            .TeleportButtons
+            .GardenButton
+
+        GuiService.GuiNavigationEnabled = true
+        GuiService.SelectedObject = button
+
+        task.wait(0.1)
+
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+        task.wait()
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+
+        task.wait(0.1)
+
+        GuiService.SelectedObject = nil
+        GuiService.GuiNavigationEnabled = false
+    end)
+
+    if not success then
+        warn("ClickGarden Error:", err)
+    end
+end
+
+--------------------------------------------------
+-- LOOP
+--------------------------------------------------
+
+task.spawn(function()
+    while true do
+        if Enabled then
+            ClickSeed()
+            task.wait(2)
+
+            ClickGarden()
+            task.wait(30)
+        else
+            task.wait(1)
         end
     end
-    return nil
-end
-
---// Teleport ke Front_BedSection.BottomFace
-local function TeleportToMyPlot()
-    local Plot = GetMyPlot()
-    if not Plot then
-        warn("Plot tidak ditemukan!")
-        return
-    end
-
-    local targetPart = Plot
-        :WaitForChild("Visual")
-        :WaitForChild("FRONT_BedSection")
-        :WaitForChild("BottomFace")
-
-    if not targetPart then
-        warn("BottomFace tidak ditemukan!")
-        return
-    end
-
-    -- teleport sedikit di atas biar tidak clip
-    HumanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
-end
-
-while true do
-    TeleportToMyPlot()
-    task.wait(30)
-end
+end)
