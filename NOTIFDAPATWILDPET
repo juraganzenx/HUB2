@@ -1,0 +1,120 @@
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
+local Backpack = LocalPlayer:WaitForChild("Backpack")
+
+-- GANTI WEBHOOK
+local WEBHOOK_URL = "YOUR_WEBHOOK_HERE"
+
+local lastCount = {
+    ["Raccoon"] = 0,
+    ["Unicorn"] = 0,
+    ["Golden Dragonfly"] = 0
+}
+
+local function CountPet(name)
+    local total = 0
+
+    for _,v in ipairs(Backpack:GetChildren()) do
+        if v.Name == name then
+            total += 1
+        end
+    end
+
+    return total
+end
+
+local function SendDiscord(addedPet, addedAmount)
+    local shackles = "Unknown"
+
+    pcall(function()
+        shackles = LocalPlayer.PlayerGui
+            .HUD
+            .Currencies
+            .CoinCounter
+            .TextLabel
+            .Text
+    end)
+
+    local raccoon = CountPet("Raccoon")
+    local unicorn = CountPet("Unicorn")
+    local dragonfly = CountPet("Golden Dragonfly")
+
+    local message =
+        "**" .. string.upper(addedPet) .. " ADDED**\n\n" ..
+        "Nama : " .. LocalPlayer.Name .. "\n\n" ..
+        "Pet :\n" ..
+        "Raccoon " .. raccoon ..
+            (addedPet == "Raccoon" and (" (+" .. addedAmount .. ")") or "") .. "\n" ..
+        "Unicorn " .. unicorn ..
+            (addedPet == "Unicorn" and (" (+" .. addedAmount .. ")") or "") .. "\n" ..
+        "Golden Dragonfly " .. dragonfly ..
+            (addedPet == "Golden Dragonfly" and (" (+" .. addedAmount .. ")") or "") .. "\n\n" ..
+        "Jumlah Shackles : " .. shackles
+
+    local data = {
+        content = message
+    }
+
+    if syn and syn.request then
+        syn.request({
+            Url = WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode(data)
+        })
+    elseif http_request then
+        http_request({
+            Url = WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode(data)
+        })
+    elseif request then
+        request({
+            Url = WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode(data)
+        })
+    end
+end
+
+-- Inisialisasi jumlah awal
+for pet,_ in pairs(lastCount) do
+    lastCount[pet] = CountPet(pet)
+end
+
+local function CheckPets()
+    for pet,old in pairs(lastCount) do
+        local now = CountPet(pet)
+
+        if now > old then
+            SendDiscord(pet, now - old)
+        end
+
+        lastCount[pet] = now
+    end
+end
+
+Backpack.ChildAdded:Connect(function()
+    task.wait(0.5)
+    CheckPets()
+end)
+
+Backpack.ChildRemoved:Connect(function()
+    task.wait(0.5)
+    CheckPets()
+end)
+
+while true do
+    task.wait(5)
+    CheckPets()
+end
