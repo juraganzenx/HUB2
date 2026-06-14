@@ -12,8 +12,8 @@ local Gardens = workspace:WaitForChild("Gardens")
 local TARGET_SEEDS = {
     Strawberry = true,
     Apple = true,
-    Blueberry = true,
-    Tomato = true,
+    -- Blueberry = true,
+    -- Tomato = true,
 }
 
 getgenv().AutoShovel = false
@@ -146,4 +146,39 @@ task.spawn(function()
 
         local Shovel = GetShovel()
         if not Shovel then
-    
+            continue
+        end
+
+        local ShovelType = Shovel:GetAttribute("Shovel")
+        if not ShovelType then
+            continue
+        end
+
+        for _, Plant in ipairs(Plants:GetChildren()) do
+            if not getgenv().AutoShovel then
+                break
+            end
+
+            local SeedName = Plant:GetAttribute("SeedName")
+            local Mutation = Plant:GetAttribute("Mutation")
+            local PlantId = Plant:GetAttribute("PlantId")
+
+            if PlantId
+                and TARGET_SEEDS[SeedName]
+                and Mutation ~= "Gold"
+                and Mutation ~= "Rainbow" then
+
+                pcall(function()
+                    Networking.Shovel.UseShovel:Fire(
+                        PlantId,
+                        "",
+                        ShovelType,
+                        Shovel
+                    )
+                end)
+
+                task.wait(0.1)
+            end
+        end
+    end
+end)
