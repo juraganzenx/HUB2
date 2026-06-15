@@ -1,0 +1,300 @@
+--// AUTO GIFT SEED GUI
+--// Execute as LocalScript
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local Networking = require(ReplicatedStorage.SharedModules.Networking)
+
+--------------------------------------------------
+-- GUI
+--------------------------------------------------
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutoGiftSeedGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local Main = Instance.new("Frame")
+Main.Parent = ScreenGui
+Main.Size = UDim2.new(0, 320, 0, 300)
+Main.Position = UDim2.new(0.5, -160, 0.5, -150)
+Main.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Main.BorderSizePixel = 0
+
+Instance.new("UICorner", Main)
+
+--------------------------------------------------
+-- TITLE
+--------------------------------------------------
+
+local Title = Instance.new("TextLabel")
+Title.Parent = Main
+Title.Size = UDim2.new(1, -35, 0, 35)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "AUTO GIFT SEED"
+Title.TextSize = 24
+Title.TextColor3 = Color3.new(1, 1, 1)
+
+--------------------------------------------------
+-- CLOSE
+--------------------------------------------------
+
+local Close = Instance.new("TextButton")
+Close.Parent = Main
+Close.Size = UDim2.new(0, 35, 0, 35)
+Close.Position = UDim2.new(1, -35, 0, 0)
+Close.Text = "X"
+Close.Font = Enum.Font.SourceSansBold
+Close.TextSize = 22
+Close.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
+Close.TextColor3 = Color3.new(1, 1, 1)
+
+Instance.new("UICorner", Close)
+
+Close.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+end)
+
+--------------------------------------------------
+-- USERNAME
+--------------------------------------------------
+
+local UsernameBox = Instance.new("TextBox")
+UsernameBox.Parent = Main
+UsernameBox.Position = UDim2.new(0, 10, 0, 45)
+UsernameBox.Size = UDim2.new(1, -20, 0, 32)
+UsernameBox.PlaceholderText = "Username"
+UsernameBox.Text = ""
+UsernameBox.ClearTextOnFocus = false
+UsernameBox.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+UsernameBox.TextColor3 = Color3.new(1, 1, 1)
+
+Instance.new("UICorner", UsernameBox)
+
+--------------------------------------------------
+-- SEED DROPDOWN
+--------------------------------------------------
+
+local SelectedSeed = ""
+
+local SeedButton = Instance.new("TextButton")
+SeedButton.Parent = Main
+SeedButton.Position = UDim2.new(0, 10, 0, 87)
+SeedButton.Size = UDim2.new(1, -20, 0, 32)
+SeedButton.Text = "Select Seed"
+SeedButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+SeedButton.TextColor3 = Color3.new(1, 1, 1)
+
+Instance.new("UICorner", SeedButton)
+
+--------------------------------------------------
+-- SEARCH BOX
+--------------------------------------------------
+
+local SearchBox = Instance.new("TextBox")
+SearchBox.Parent = Main
+SearchBox.Position = UDim2.new(0, 10, 0, 122)
+SearchBox.Size = UDim2.new(1, -20, 0, 28)
+SearchBox.PlaceholderText = "Search Seed..."
+SearchBox.Text = ""
+SearchBox.ClearTextOnFocus = false
+SearchBox.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+SearchBox.TextColor3 = Color3.new(1, 1, 1)
+SearchBox.Visible = false
+
+Instance.new("UICorner", SearchBox)
+
+local ListFrame = Instance.new("ScrollingFrame")
+ListFrame.Parent = Main
+ListFrame.Position = UDim2.new(0, 10, 0, 153)
+ListFrame.Size = UDim2.new(1, -20, 0, 100)
+ListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ListFrame.ScrollBarThickness = 6
+ListFrame.Visible = false
+ListFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+
+Instance.new("UICorner", ListFrame)
+
+local UIList = Instance.new("UIListLayout")
+UIList.Parent = ListFrame
+UIList.Padding = UDim.new(0, 2)
+
+--------------------------------------------------
+-- LOAD SEEDS
+--------------------------------------------------
+
+local SeedFolder = ReplicatedStorage
+	:WaitForChild("StockValues")
+	:WaitForChild("SeedShop")
+	:WaitForChild("Items")
+
+local SeedButtons = {}
+
+for _, Seed in ipairs(SeedFolder:GetChildren()) do
+
+	local Button = Instance.new("TextButton")
+	Button.Parent = ListFrame
+	Button.Size = UDim2.new(1, -5, 0, 28)
+	Button.Text = Seed.Name
+	Button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	Button.TextColor3 = Color3.new(1, 1, 1)
+
+	Instance.new("UICorner", Button)
+
+	table.insert(SeedButtons, Button)
+
+	Button.MouseButton1Click:Connect(function()
+
+		SelectedSeed = Seed.Name
+		SeedButton.Text = Seed.Name
+		ListFrame.Visible = false
+
+	end)
+
+end
+
+task.wait()
+
+ListFrame.CanvasSize = UDim2.new(
+	0,
+	0,
+	0,
+	UIList.AbsoluteContentSize.Y
+)
+
+UIList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+
+	ListFrame.CanvasSize = UDim2.new(
+		0,
+		0,
+		0,
+		UIList.AbsoluteContentSize.Y
+	)
+
+end)
+
+SeedButton.MouseButton1Click:Connect(function()
+    local Visible = not ListFrame.Visible
+
+    ListFrame.Visible = Visible
+    SearchBox.Visible = Visible
+
+    if Visible then
+        SearchBox.Text = ""
+    end
+end)
+--------------------------------------------------
+-- AMOUNT
+--------------------------------------------------
+
+local AmountBox = Instance.new("TextBox")
+AmountBox.Parent = Main
+AmountBox.Position = UDim2.new(0, 10, 0, 232)
+AmountBox.Size = UDim2.new(1, -20, 0, 32)
+AmountBox.PlaceholderText = "Jumlah"
+AmountBox.Text = ""
+AmountBox.ClearTextOnFocus = false
+AmountBox.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+AmountBox.TextColor3 = Color3.new(1, 1, 1)
+
+Instance.new("UICorner", AmountBox)
+
+--------------------------------------------------
+-- SEND BUTTON
+--------------------------------------------------
+
+local SendButton = Instance.new("TextButton")
+SendButton.Parent = Main
+SendButton.Position = UDim2.new(0, 10, 0, 270)
+SendButton.Size = UDim2.new(1, -20, 0, 25)
+SendButton.Text = "SEND GIFT"
+SendButton.BackgroundColor3 = Color3.fromRGB(0, 170, 100)
+SendButton.TextColor3 = Color3.new(1, 1, 1)
+
+Instance.new("UICorner", SendButton)
+
+--------------------------------------------------
+-- SEND
+--------------------------------------------------
+
+SendButton.MouseButton1Click:Connect(function()
+
+	local Username = UsernameBox.Text
+	local Amount = tonumber(AmountBox.Text)
+
+	if Username == "" then
+		warn("Username kosong")
+		return
+	end
+
+	if not SelectedSeed or SelectedSeed == "" then
+		warn("Pilih seed")
+		return
+	end
+
+	if not Amount or Amount <= 0 then
+		warn("Jumlah tidak valid")
+		return
+	end
+
+	local Success, UserId = pcall(function()
+		return Players:GetUserIdFromNameAsync(Username)
+	end)
+
+	if not Success then
+		warn("User tidak ditemukan")
+		return
+	end
+
+	Networking.Mailbox.SendBatch:Fire(
+		UserId,
+		{
+			{
+				Category = "Seeds",
+				ItemKey = SelectedSeed,
+				Count = Amount
+			}
+		},
+		"Gift"
+	)
+
+	print("Gift berhasil dikirim!")
+end)
+
+--------------------------------------------------
+-- SEARCH FILTER
+--------------------------------------------------
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+
+    local Search = string.lower(SearchBox.Text)
+
+    for _, Button in ipairs(SeedButtons) do
+
+        if Search == "" then
+            Button.Visible = true
+        else
+            Button.Visible =
+                string.find(
+                    string.lower(Button.Text),
+                    Search,
+                    1,
+                    true
+                ) ~= nil
+        end
+
+    end
+
+    task.wait()
+
+    ListFrame.CanvasSize = UDim2.new(
+        0,
+        0,
+        0,
+        UIList.AbsoluteContentSize.Y
+    )
+
+end)
