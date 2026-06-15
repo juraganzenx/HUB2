@@ -12,7 +12,7 @@ local Networking = require(ReplicatedStorage.SharedModules.Networking)
 -- CONFIG
 --------------------------------------------------
 
-local TARGET_USER_ID = 8715392471 -- GANTI USER ID TUJUAN
+local TARGET_USER_ID = 8139051826 -- GANTI USER ID TUJUAN
 local NOTE = "Gift"
 
 local TARGET_PETS = {
