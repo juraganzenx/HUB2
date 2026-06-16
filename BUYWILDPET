@@ -6,7 +6,7 @@ local CHECK_DELAY = 2
 
 local WHITELIST = {
     ["Raccoon"] = true,
-    ["Golden Dragonfly"] = true,
+    ["GoldenDragonfly"] = true,
     ["Unicorn"] = true,
     ["Black Dragon"] = true,
     ["Ice Serpent"] = true,
