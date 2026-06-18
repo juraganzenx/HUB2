@@ -56,6 +56,56 @@ local function SendDiscordNotification(petName)
         return
     end
 
+    local joinScript = string.format(
+        'game:GetService("TeleportService"):TeleportToPlaceInstance(%d, "%s", game.Players.LocalPlayer)',
+        game.PlaceId,
+        game.JobId
+    )
+
+    local embed = {
+        title = "🐾 Wild Pet Spawned",
+        color = 16766720,
+
+        fields = {
+            {
+                name = "👤 Username",
+                value = LocalPlayer.Name,
+                inline = true
+            },
+            {
+                name = "🏷️ Display Name",
+                value = LocalPlayer.DisplayName,
+                inline = true
+            },
+            {
+                name = "🐾 Wild Pet",
+                value = petName,
+                inline = false
+            },
+            {
+                name = "🎮 Place ID",
+                value = tostring(game.PlaceId),
+                inline = true
+            },
+            {
+                name = "🌐 Job ID",
+                value = tostring(game.JobId),
+                inline = false
+            },
+            {
+                name = "📋 Join Script",
+                value = "```lua\n" .. joinScript .. "\n```",
+                inline = false
+            }
+        },
+
+        footer = {
+            text = "Wild Pet Notifier"
+        },
+
+        timestamp = DateTime.now():ToIsoDate(),
+    }
+
     pcall(function()
         req({
             Url = DISCORD_WEBHOOK,
@@ -65,12 +115,7 @@ local function SendDiscordNotification(petName)
             },
             Body = HttpService:JSONEncode({
                 username = "Wild Pet Notifier",
-                embeds = {{
-                    title = "🐾 Wild Pet Spawned",
-                    description = "**Pet:** `" .. petName .. "`",
-                    color = 16776960,
-                    timestamp = DateTime.now():ToIsoDate(),
-                }}
+                embeds = {embed}
             })
         })
     end)
