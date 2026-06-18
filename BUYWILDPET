@@ -164,7 +164,7 @@ while task.wait(CHECK_DELAY) do
 
                     -- Teleport ke pet
                     hrp.CFrame = root.CFrame + Vector3.new(0, 0, 3)
-                    task.wait(0.2)
+                    task.wait(0.8)
 
                     -- Buy
                     pcall(function()
@@ -173,7 +173,7 @@ while task.wait(CHECK_DELAY) do
 
                     print("[AUTO BUY] " .. petName)
 
-                    task.wait(0.3)
+                    task.wait(1)
 
                     -- Kembali ke posisi semula
                     hrp.CFrame = oldCFrame
