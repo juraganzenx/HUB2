@@ -4,16 +4,11 @@ local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 
---========================
--- CONFIG
---========================
-local DELAY_BEFORE_HOP = 20 -- Tunggu 20 detik sebelum hop
-local RETRY_INTERVAL = 2    -- Coba hop lagi setiap 2 detik jika gagal
-local MIN_PLAYERS = 5       -- Cari server minimal 5 player
+local DELAY_BEFORE_HOP = 20 -- detik
 
---========================
--- Cek apakah ada player yang lebih kaya
---========================
+----------------------------------------------------
+-- Cek apakah ada player yang duitnya lebih banyak
+----------------------------------------------------
 local function HasRicherPlayer()
 	local myLeaderstats = LocalPlayer:FindFirstChild("leaderstats")
 	if not myLeaderstats then
@@ -36,12 +31,12 @@ local function HasRicherPlayer()
 					and sheckles:IsA("IntValue")
 					and sheckles.Value > mySheckles.Value then
 
-					warn(string.format(
-						"%s memiliki %s Sheckles (Kita: %s)",
-						player.Name,
-						sheckles.Value,
-						mySheckles.Value
-					))
+					warn(player.Name ..
+						" memiliki " ..
+						sheckles.Value ..
+						" > kita (" ..
+						mySheckles.Value ..
+						")")
 
 					return true
 				end
@@ -52,88 +47,67 @@ local function HasRicherPlayer()
 	return false
 end
 
---========================
--- Ambil daftar server
---========================
-local function GetAvailableServers()
+----------------------------------------------------
+-- Server Hop
+----------------------------------------------------
+local function ServerHop()
 	local PlaceID = game.PlaceId
 
 	local success, result = pcall(function()
 		return game:HttpGet(
 			"https://games.roblox.com/v1/games/"
-				.. PlaceID
-				.. "/servers/Public?sortOrder=Asc&limit=100"
+			.. PlaceID ..
+			"/servers/Public?sortOrder=Asc&limit=100"
 		)
 	end)
 
 	if not success then
-		warn("Gagal mengambil server list.")
-		return {}
+		warn("Gagal mengambil server list")
+		return
 	end
 
 	local data = HttpService:JSONDecode(result)
+
 	local servers = {}
 
 	for _, server in ipairs(data.data) do
 		if server.id ~= game.JobId
-			and server.playing >= MIN_PLAYERS
+			and server.playing >= 5
 			and server.playing < server.maxPlayers then
 
 			table.insert(servers, server.id)
 		end
 	end
 
-	return servers
-end
+	if #servers > 0 then
+		local target = servers[math.random(1, #servers)]
 
---========================
--- Spam teleport setiap 2 detik sampai berhasil
---========================
-local function ServerHop()
-	local PlaceID = game.PlaceId
-
-	while true do
-		local servers = GetAvailableServers()
-
-		if #servers == 0 then
-			warn("Tidak ada server yang memenuhi syarat. Retry 2 detik...")
-			task.wait(RETRY_INTERVAL)
-			continue
-		end
-
-		local targetServer = servers[math.random(1, #servers)]
-
-		warn("Mencoba teleport ke server:", targetServer)
-
-		pcall(function()
-			TeleportService:TeleportToPlaceInstance(
-				PlaceID,
-				targetServer,
-				LocalPlayer
-			)
-		end)
-
-		-- Jika gagal (misalnya server penuh),
-		-- akan mencoba lagi setelah 2 detik.
-		task.wait(RETRY_INTERVAL)
+		TeleportService:TeleportToPlaceInstance(
+			PlaceID,
+			target,
+			LocalPlayer
+		)
+	else
+		warn("Tidak ada server yang memenuhi syarat.")
 	end
 end
 
---========================
+----------------------------------------------------
 -- Main Loop
---========================
+----------------------------------------------------
 while true do
+
 	if HasRicherPlayer() then
-		warn("Player lebih kaya terdeteksi. Menunggu 20 detik...")
+		warn("Menunggu 20 detik sebelum hop...")
 
 		task.wait(DELAY_BEFORE_HOP)
 
-		-- Cek ulang setelah delay
+		-- Cek lagi setelah delay
 		if HasRicherPlayer() then
-			warn("Player masih ada. Memulai Server Hop...")
+			warn("Player lebih kaya masih ada, server hopping...")
 			ServerHop()
 		else
-			warn("Player sudah keluar. Batal hop.")
+			warn("Player sudah pergi, batal hop.")
 		end
 	end
 
