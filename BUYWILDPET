@@ -11,14 +11,18 @@ local WHITELIST = {
     ["Dragonfly"] = true,
     ["BlackDragon"] = true,
     ["IceSerpent"] = true,
-    
 }
+
+-- Ganti dengan Discord Webhook kamu
+local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1476987739898515571/46Ws80ynwg5pYRC_ioOxxiYwwsS4odCDEySKSdZ8r4DNSsdrQPzTmjh49Tomq_1Wt1kO"
 
 --------------------------------------------------
 -- SERVICES
 --------------------------------------------------
 
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
 local LocalPlayer = Players.LocalPlayer
 
 local function GetRoot()
@@ -35,7 +39,66 @@ local WildPetSpawns = workspace
     :WaitForChild("WildPetSpawns")
 
 --------------------------------------------------
--- MAIN LOOP
+-- DISCORD NOTIFICATION
+--------------------------------------------------
+
+local req =
+    (syn and syn.request)
+    or request
+    or http_request
+    or (http and http.request)
+    or (fluxus and fluxus.request)
+
+local Seen = {}
+
+local function SendDiscordNotification(petName)
+    if not req or DISCORD_WEBHOOK == "" then
+        return
+    end
+
+    pcall(function()
+        req({
+            Url = DISCORD_WEBHOOK,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode({
+                username = "Wild Pet Notifier",
+                embeds = {{
+                    title = "🐾 Wild Pet Spawned",
+                    description = "**Pet:** `" .. petName .. "`",
+                    color = 16776960,
+                    timestamp = DateTime.now():ToIsoDate(),
+                }}
+            })
+        })
+    end)
+end
+
+--------------------------------------------------
+-- SEND NOTIFICATION WHEN PET SPAWNS
+--------------------------------------------------
+
+WildPetSpawns.ChildAdded:Connect(function(pet)
+    task.wait(0.1)
+
+    local petName = pet:GetAttribute("PetName")
+
+    if petName and WHITELIST[petName] and not Seen[pet] then
+        Seen[pet] = true
+
+        print("[NOTIFY] " .. petName)
+        SendDiscordNotification(petName)
+    end
+end)
+
+WildPetSpawns.ChildRemoved:Connect(function(pet)
+    Seen[pet] = nil
+end)
+
+--------------------------------------------------
+-- AUTO BUY LOOP
 --------------------------------------------------
 
 while task.wait(CHECK_DELAY) do
