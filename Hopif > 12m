@@ -4,9 +4,27 @@ local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 
-local MIN_SHECKLES = 12000000 -- 12 juta
+--========================
+-- CONFIG
+--========================
+local DELAY_BEFORE_HOP = 20 -- Tunggu 20 detik sebelum hop
+local RETRY_INTERVAL = 2    -- Coba hop lagi setiap 2 detik jika gagal
+local MIN_PLAYERS = 5       -- Cari server minimal 5 player
 
-local function ShouldHopServer()
+--========================
+-- Cek apakah ada player yang lebih kaya
+--========================
+local function HasRicherPlayer()
+	local myLeaderstats = LocalPlayer:FindFirstChild("leaderstats")
+	if not myLeaderstats then
+		return false
+	end
+
+	local mySheckles = myLeaderstats:FindFirstChild("Sheckles")
+	if not mySheckles then
+		return false
+	end
+
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= LocalPlayer then
 			local leaderstats = player:FindFirstChild("leaderstats")
@@ -14,11 +32,18 @@ local function ShouldHopServer()
 			if leaderstats then
 				local sheckles = leaderstats:FindFirstChild("Sheckles")
 
-				if sheckles and sheckles:IsA("IntValue") then
-					if sheckles.Value > MIN_SHECKLES then
-						warn(player.Name .. " memiliki " .. sheckles.Value .. " Sheckles.")
-						return true
-					end
+				if sheckles
+					and sheckles:IsA("IntValue")
+					and sheckles.Value > mySheckles.Value then
+
+					warn(string.format(
+						"%s memiliki %s Sheckles (Kita: %s)",
+						player.Name,
+						sheckles.Value,
+						mySheckles.Value
+					))
+
+					return true
 				end
 			end
 		end
@@ -27,48 +52,90 @@ local function ShouldHopServer()
 	return false
 end
 
-local function ServerHop()
+--========================
+-- Ambil daftar server
+--========================
+local function GetAvailableServers()
 	local PlaceID = game.PlaceId
 
 	local success, result = pcall(function()
 		return game:HttpGet(
-			"https://games.roblox.com/v1/games/" ..
-			PlaceID ..
-			"/servers/Public?sortOrder=Asc&limit=100"
+			"https://games.roblox.com/v1/games/"
+				.. PlaceID
+				.. "/servers/Public?sortOrder=Asc&limit=100"
 		)
 	end)
 
 	if not success then
-		warn("Gagal mengambil server list")
-		return
+		warn("Gagal mengambil server list.")
+		return {}
 	end
 
 	local data = HttpService:JSONDecode(result)
-
 	local servers = {}
 
 	for _, server in ipairs(data.data) do
-		if server.playing < server.maxPlayers and server.id ~= game.JobId then
+		if server.id ~= game.JobId
+			and server.playing >= MIN_PLAYERS
+			and server.playing < server.maxPlayers then
+
 			table.insert(servers, server.id)
 		end
 	end
 
-	if #servers > 0 then
-		local randomServer = servers[math.random(1, #servers)]
-		TeleportService:TeleportToPlaceInstance(
-			PlaceID,
-			randomServer,
-			LocalPlayer
-		)
-	else
-		warn("Tidak ada server yang tersedia.")
+	return servers
+end
+
+--========================
+-- Spam teleport setiap 2 detik sampai berhasil
+--========================
+local function ServerHop()
+	local PlaceID = game.PlaceId
+
+	while true do
+		local servers = GetAvailableServers()
+
+		if #servers == 0 then
+			warn("Tidak ada server yang memenuhi syarat. Retry 2 detik...")
+			task.wait(RETRY_INTERVAL)
+			continue
+		end
+
+		local targetServer = servers[math.random(1, #servers)]
+
+		warn("Mencoba teleport ke server:", targetServer)
+
+		pcall(function()
+			TeleportService:TeleportToPlaceInstance(
+				PlaceID,
+				targetServer,
+				LocalPlayer
+			)
+		end)
+
+		-- Jika gagal (misalnya server penuh),
+		-- akan mencoba lagi setelah 2 detik.
+		task.wait(RETRY_INTERVAL)
 	end
 end
 
+--========================
+-- Main Loop
+--========================
 while true do
-	if ShouldHopServer() then
-		ServerHop()
+	if HasRicherPlayer() then
+		warn("Player lebih kaya terdeteksi. Menunggu 20 detik...")
+
+		task.wait(DELAY_BEFORE_HOP)
+
+		-- Cek ulang setelah delay
+		if HasRicherPlayer() then
+			warn("Player masih ada. Memulai Server Hop...")
+			ServerHop()
+		else
+			warn("Player sudah keluar. Batal hop.")
+		end
 	end
 
-	task.wait(60)
+	task.wait(5)
 end
