@@ -164,7 +164,7 @@ while task.wait(CHECK_DELAY) do
 
                     -- Teleport ke pet
                     hrp.CFrame = root.CFrame + Vector3.new(0, 0, 3)
-                    task.wait(0.8)
+                    task.wait(2)
 
                     -- Buy
                     pcall(function()
