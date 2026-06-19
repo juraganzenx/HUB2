@@ -1,0 +1,36 @@
+--DESTROY PLOT ORANG
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local function GetMyPlot()
+    local PlotId = LocalPlayer:GetAttribute("PlotId")
+    if not PlotId then
+        return nil
+    end
+
+    return workspace.Gardens:FindFirstChild("Plot" .. PlotId)
+end
+
+local function RemoveOtherPlots()
+    local MyPlot = GetMyPlot()
+    if not MyPlot then
+        return
+    end
+
+    for _, Plot in ipairs(workspace.Gardens:GetChildren()) do
+        if Plot ~= MyPlot then
+            Plot:Destroy() -- atau Plot.Parent = nil jika lebih aman
+        end
+    end
+end
+
+RemoveOtherPlots()
+
+workspace.Gardens.ChildAdded:Connect(function(Plot)
+    task.wait()
+
+    local MyPlot = GetMyPlot()
+    if MyPlot and Plot ~= MyPlot then
+        Plot:Destroy()
+    end
+end)
