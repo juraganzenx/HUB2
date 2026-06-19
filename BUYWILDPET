@@ -147,7 +147,7 @@ end)
 --------------------------------------------------
 
 local TweenService = game:GetService("TweenService")
-local TWEEN_SPEED = 50 -- stud per detik
+local TWEEN_SPEED = 30 -- stud per detik
 
 while task.wait(CHECK_DELAY) do
     for _, pet in ipairs(WildPetSpawns:GetChildren()) do
