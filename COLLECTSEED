@@ -6,7 +6,7 @@ local LocalPlayer = Players.LocalPlayer
 local Map = workspace:WaitForChild("Map")
 local SeedPackSpawn = Map:WaitForChild("SeedPackSpawnServerLocations")
 
-local SPEED = 40 -- studs per detik
+local SPEED = 30 -- studs per detik
 
 local function TweenTo(cf)
     local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
