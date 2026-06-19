@@ -166,14 +166,23 @@ while task.wait(CHECK_DELAY) do
                     hrp.CFrame = root.CFrame + Vector3.new(0, 0, 3)
                     task.wait(2)
 
-                    -- Buy
-                    pcall(function()
-                        fireproximityprompt(prompt)
-                    end)
-
+                    -- Spam ProximityPrompt sampai pet hilang / berhasil dibeli
+                    local timeout = tick() + 10 -- maksimal 10 detik
+                    
+                    while pet.Parent and tick() < timeout do
+                        pcall(function()
+                            fireproximityprompt(prompt)
+                        end)
+                    
+                        task.wait(0.1) -- spam setiap 0.1 detik
+                    
+                        -- jika prompt sudah hilang berarti kemungkinan berhasil dibeli
+                        if not root:FindFirstChild("BuyPrompt") then
+                            break
+                        end
+                    end
+                    
                     print("[AUTO BUY] " .. petName)
-
-                    task.wait(1)
 
                     -- Kembali ke posisi semula
                     hrp.CFrame = oldCFrame
