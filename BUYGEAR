@@ -6,7 +6,15 @@ local BuyList = {
     "SuperWateringCan",
     "SuperSprinkler",
     "SuperWatering Can",
-    
+    "Common Sprinkler",
+    "CommonSprinkler",
+    "UncommonSprinkler",
+    "Uncommon Sprinkler",
+    "RareSprinkler",
+    "Rare Sprinkler",
+    "LegendarySprinkler",
+    "Legendary Sprinkler",
+
 }
 
 while task.wait(10) do
