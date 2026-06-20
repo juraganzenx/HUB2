@@ -11,6 +11,8 @@ local WHITELIST = {
     ["Dragonfly"] = true,
     ["BlackDragon"] = true,
     ["IceSerpent"] = true,
+    ["Bear"] = true,
+    
 }
 
 -- Ganti dengan Discord Webhook kamu
