@@ -1,0 +1,16 @@
+local Networking = require(game.ReplicatedStorage.SharedModules.Networking)
+
+local BuyList = {
+    "Super Watering Can",
+    "Super Sprinkler",
+    "SuperWateringCan",
+    "SuperSprinkler",
+    "SuperWatering Can",
+    
+}
+
+while task.wait(10) do
+    for i = 1, #BuyList do
+        Networking.GearShop.PurchaseGear:Fire(BuyList[i])
+    end
+end
