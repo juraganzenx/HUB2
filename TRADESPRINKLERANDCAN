@@ -35,26 +35,6 @@ local function HasItem(ItemName)
 		or (Character and Character:FindFirstChild(ItemName))
 end
 
-local function GetItemCount(ItemName)
-	local Backpack = LocalPlayer:FindFirstChild("Backpack")
-	local Character = LocalPlayer.Character
-
-	local Tool =
-		(Backpack and Backpack:FindFirstChild(ItemName))
-		or (Character and Character:FindFirstChild(ItemName))
-
-	if not Tool then
-		return 0
-	end
-
-	local Count = Tool:GetAttribute("Count")
-	if typeof(Count) ~= "number" then
-		return 0
-	end
-
-	return Count
-end
-
 --------------------------------------------------
 -- LOOP GIFT
 --------------------------------------------------
@@ -62,7 +42,7 @@ end
 while task.wait(INTERVAL) do
 
 	-- Super Sprinkler
-	if HasItem("Super Sprinkler") >= 3 then
+	if HasItem("Super Sprinkler") then
 		pcall(function()
 			Networking.Mailbox.SendBatch:Fire(
 				UserId,
@@ -70,16 +50,16 @@ while task.wait(INTERVAL) do
 					{
 						Category = "Sprinklers",
 						ItemKey = "Super Sprinkler",
-						Count = 3
+						Count = 1
 					}
 				},
-				"SuperSprinkler"
+				"Gift"
 			)
 		end)
 	end
 
 	-- Super Watering Can
-	if HasItem("Super Watering Can") >= 3 then
+	if HasItem("Super Watering Can") then
 		pcall(function()
 			Networking.Mailbox.SendBatch:Fire(
 				UserId,
@@ -87,58 +67,10 @@ while task.wait(INTERVAL) do
 					{
 						Category = "WateringCans",
 						ItemKey = "Super Watering Can",
-						Count = 3
-					}
-				},
-				"SuperWateringCan"
-			)
-		end)
-	end
-
-	if HasItem("Rainbow") >= 5 then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Rainbow",
-						Count = 5
-					}
-				},
-				"Rainbow"
-			)
-		end)
-	end
-
-	if HasItem("Venus Flying Trap") >= 1 then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Venus Flying Trap",
 						Count = 1
 					}
 				},
-				"Venus Flying Trap"
-			)
-		end)
-	end
-
-	if HasItem("Poison Apple") >= 1 then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Poison Apple",
-						Count = 1
-					}
-				},
-				"Poison Apple"
+				"Gift"
 			)
 		end)
 	end
