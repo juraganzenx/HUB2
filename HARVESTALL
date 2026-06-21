@@ -5,7 +5,7 @@ local Gardens = workspace:WaitForChild("Gardens")
 
 -- Blacklist Fruit berdasarkan CorePartName
 local BLACKLIST = {
-    Strawberry = true,
+    seedname = true,
 }
 
 -- Cari plot milik player
