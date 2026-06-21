@@ -1,4 +1,4 @@
---AUTOPLANT IF <200 1 titik
+--AUTOPLANT IF <300
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -6,7 +6,7 @@ local LocalPlayer = Players.LocalPlayer
 local Networking = require(ReplicatedStorage.SharedModules.Networking)
 
 local SEED_NAME = "Gold"
-local MAX_GOLD = 200
+local MAX_GOLD = 300
 
 --------------------------------------------------
 -- GUI
@@ -145,80 +145,14 @@ while task.wait(0.1) do
         continue
     end
 
-    --------------------------------------------------
-    -- STACK POSITION
-    --------------------------------------------------
+    -- Random position di BottomFace
+    local Margin = 0.5
 
-    local StackCount = 0
-
-    local BasePos = BottomFace.Position
-
-    --------------------------------------------------
-    -- AUTO PLANT
-    --------------------------------------------------
-
-    while task.wait(0.1) do
-
-        local GoldCount = CountGoldPlants()
-
-        if GoldCount >= MAX_GOLD then
-            continue
-        end
-
-        local Character = LocalPlayer.Character
-        local Backpack = LocalPlayer:FindFirstChild("Backpack")
-
-        if not Character or not Backpack then
-            continue
-        end
-
-        local Tool = Character:FindFirstChild(SEED_NAME)
-
-        if not Tool then
-            Tool = Backpack:FindFirstChild(SEED_NAME)
-
-            if Tool and Tool:IsA("Tool") then
-                Tool.Parent = Character
-                task.wait(0.2)
-            end
-        end
-
-        if not Tool then
-            continue
-        end
-
-        local SeedTool = Tool:GetAttribute("SeedTool")
-        if not SeedTool then
-            continue
-        end
-
-        local Cycle = StackCount % 1500
-
-		local Column = math.floor(Cycle / 500)
-		local Height = (Cycle % 500) * 0.1
-
-		local XOffset = 0
-
-		if Column == 1 then
-			XOffset = 10
-		elseif Column == 2 then
-			XOffset = -10
-		end
-
-		local PlantPos = BasePos + Vector3.new(
-			XOffset,
-			Height,
-			0
-		)
-
-        Networking.Plant.PlantSeed:Fire(
-            PlantPos,
-            SeedTool,
-            Tool
-        )
-
-        StackCount += 1
-    end
+    local PlantPos = BottomFace.CFrame:PointToWorldSpace(Vector3.new(
+        (math.random() - 0.5) * (BottomFace.Size.X - Margin * 2),
+        0,
+        (math.random() - 0.5) * (BottomFace.Size.Z - Margin * 2)
+    ))
 
     Networking.Plant.PlantSeed:Fire(
         PlantPos,
