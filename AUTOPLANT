@@ -1,4 +1,4 @@
---AUTOPLANT IF <300
+--AUTOPLANT IF <200 1 titik
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -145,14 +145,67 @@ while task.wait(0.1) do
         continue
     end
 
-    -- Random position di BottomFace
-    local Margin = 0.5
+    --------------------------------------------------
+    -- STACK POSITION
+    --------------------------------------------------
 
-    local PlantPos = BottomFace.CFrame:PointToWorldSpace(Vector3.new(
-        (math.random() - 0.5) * (BottomFace.Size.X - Margin * 2),
-        0,
-        (math.random() - 0.5) * (BottomFace.Size.Z - Margin * 2)
-    ))
+    local StackCount = 0
+
+    local BasePos = BottomFace.Position
+
+    --------------------------------------------------
+    -- AUTO PLANT
+    --------------------------------------------------
+
+    while task.wait(0.1) do
+
+        local GoldCount = CountGoldPlants()
+
+        if GoldCount >= MAX_GOLD then
+            continue
+        end
+
+        local Character = LocalPlayer.Character
+        local Backpack = LocalPlayer:FindFirstChild("Backpack")
+
+        if not Character or not Backpack then
+            continue
+        end
+
+        local Tool = Character:FindFirstChild(SEED_NAME)
+
+        if not Tool then
+            Tool = Backpack:FindFirstChild(SEED_NAME)
+
+            if Tool and Tool:IsA("Tool") then
+                Tool.Parent = Character
+                task.wait(0.2)
+            end
+        end
+
+        if not Tool then
+            continue
+        end
+
+        local SeedTool = Tool:GetAttribute("SeedTool")
+        if not SeedTool then
+            continue
+        end
+
+        local PlantPos = BasePos + Vector3.new(
+            0,
+            (StackCount % 500) * 0.1,
+            0
+        )
+
+        Networking.Plant.PlantSeed:Fire(
+            PlantPos,
+            SeedTool,
+            Tool
+        )
+
+        StackCount += 1
+    end
 
     Networking.Plant.PlantSeed:Fire(
         PlantPos,
