@@ -192,11 +192,24 @@ while task.wait(0.1) do
             continue
         end
 
-        local PlantPos = BasePos + Vector3.new(
-            0,
-            (StackCount % 500) * 0.1,
-            0
-        )
+        local Cycle = StackCount % 1500
+
+		local Column = math.floor(Cycle / 500)
+		local Height = (Cycle % 500) * 0.1
+
+		local XOffset = 0
+
+		if Column == 1 then
+			XOffset = 10
+		elseif Column == 2 then
+			XOffset = -10
+		end
+
+		local PlantPos = BasePos + Vector3.new(
+			XOffset,
+			Height,
+			0
+		)
 
         Networking.Plant.PlantSeed:Fire(
             PlantPos,
