@@ -15,6 +15,15 @@ local WHITELIST = {
     
 }
 
+local SIZE_PETS = {
+    ["Bunny"] = true,
+    ["Frog"] = true,
+    ["Deer"] = true,
+    ["Robin"] = true,
+    ["Owl"] = true,
+    ["Bee"] = true,
+}
+
 -- Ganti dengan Discord Webhook kamu
 local DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1476987739898515571/46Ws80ynwg5pYRC_ioOxxiYwwsS4odCDEySKSdZ8r4DNSsdrQPzTmjh49Tomq_1Wt1kO"
 
@@ -149,13 +158,24 @@ end)
 --------------------------------------------------
 
 local TweenService = game:GetService("TweenService")
-local TWEEN_SPEED = 30 -- stud per detik
+local TWEEN_SPEED = 30
 
 while task.wait(CHECK_DELAY) do
     for _, pet in ipairs(WildPetSpawns:GetChildren()) do
         local petName = pet:GetAttribute("PetName")
+        local shouldBuy = false
 
+        -- Pet whitelist langsung beli
         if petName and WHITELIST[petName] then
+            shouldBuy = true
+        end
+
+        -- Bunny/Frog/Deer/Robin/Owl/Bee hanya jika punya Attribute Size
+        if petName and SIZE_PETS[petName] and pet:GetAttribute("Size") ~= nil then
+            shouldBuy = true
+        end
+
+        if shouldBuy then
             local root = pet:FindFirstChild("RootPart")
 
             if root then
@@ -164,11 +184,11 @@ while task.wait(CHECK_DELAY) do
                 if prompt and prompt:IsA("ProximityPrompt") then
                     local hrp = GetRoot()
 
-                    -- Target 0 stud di depan pet
-                    local targetCFrame = root.CFrame * CFrame.new(0, 0, 0)
+                    local targetCFrame = root.CFrame
 
-                    -- Hitung durasi berdasarkan speed
-                    local distance = (hrp.Position - targetCFrame.Position).Magnitude
+                    local distance =
+                        (hrp.Position - targetCFrame.Position).Magnitude
+
                     local duration = distance / TWEEN_SPEED
 
                     local tween = TweenService:Create(
@@ -187,11 +207,17 @@ while task.wait(CHECK_DELAY) do
                     tween.Completed:Wait()
 
                     task.wait(0.5)
+
                     pcall(function()
                         fireproximityprompt(prompt)
                     end)
 
-                    print("[AUTO BUY] " .. petName)
+                    print(
+                        "[AUTO BUY] "
+                        .. tostring(petName)
+                        .. " | Size="
+                        .. tostring(pet:GetAttribute("Size"))
+                    )
 
                     task.wait(0.2)
                 end
