@@ -41,36 +41,92 @@ end
 
 while task.wait(INTERVAL) do
 
-	-- Super Sprinkler
 	if HasItem("Super Sprinkler") then
 		pcall(function()
+			local count = tool:GetAttribute("Count") or 1
+
 			Networking.Mailbox.SendBatch:Fire(
 				UserId,
 				{
 					{
 						Category = "Sprinklers",
 						ItemKey = "Super Sprinkler",
-						Count = 1
+						Count = count
 					}
 				},
-				"Gift"
+				"Super Sprinkler"
 			)
 		end)
 	end
 
-	-- Super Watering Can
 	if HasItem("Super Watering Can") then
 		pcall(function()
+			local count = tool:GetAttribute("Count") or 1
+
 			Networking.Mailbox.SendBatch:Fire(
 				UserId,
 				{
 					{
 						Category = "WateringCans",
 						ItemKey = "Super Watering Can",
-						Count = 1
+						Count = count
 					}
 				},
-				"Gift"
+				"Super Watering Can"
+			)
+		end)
+	end
+
+	if HasItem("Rainbow") then
+		pcall(function()
+			local count = tool:GetAttribute("Count") or 1
+
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Seeds",
+						ItemKey = "Rainbow",
+						Count = count
+					}
+				},
+				"Rainbow"
+			)
+		end)
+	end
+
+	if HasItem("Venus Fly Trap") then
+		pcall(function()
+			local count = tool:GetAttribute("Count") or 1
+
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Seeds",
+						ItemKey = "Venus Fly Trap",
+						Count = count
+					}
+				},
+				"Venus Fly Trap"
+			)
+		end)
+	end
+
+	if HasItem("Rainbow") then
+		pcall(function()
+			local count = tool:GetAttribute("Count") or 1
+
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Seeds",
+						ItemKey = "Poison Apple",
+						Count = count
+					}
+				},
+				"Poison Apple"
 			)
 		end)
 	end
