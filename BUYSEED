@@ -5,6 +5,11 @@ local Seeds = {
     "Moon Bloom",
     "Venus Fly Trap",
     "VenusFlyTrap",
+    "Pomegranate",
+    "Poison Apple",
+    "PoisonApple",
+    "Venom Spitter",
+    "VenomSpitter",
 
 }
 
