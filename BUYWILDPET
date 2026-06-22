@@ -3,15 +3,13 @@
 --------------------------------------------------
 
 local CHECK_DELAY = 2
+local MIN_SHECKLES = 100000000
 
 local WHITELIST = {
     ["Raccoon"] = true,
     ["Unicorn"] = true,
     ["GoldenDragonfly"] = true,
     ["Bear"] = true,
-    
-    
-    
 }
 
 local SIZE_PETS = {
@@ -34,6 +32,28 @@ local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
+
+--------------------------------------------------
+-- SHECKLES CHECK
+--------------------------------------------------
+
+local function HasEnoughSheckles()
+    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+    if not leaderstats then
+        return false
+    end
+
+    local sheckles = leaderstats:FindFirstChild("Sheckles")
+    if not sheckles then
+        return false
+    end
+
+    return sheckles.Value > MIN_SHECKLES
+end
+
+--------------------------------------------------
+-- GET ROOT
+--------------------------------------------------
 
 local function GetRoot()
     local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -160,6 +180,11 @@ local TweenService = game:GetService("TweenService")
 local TWEEN_SPEED = 16
 
 while task.wait(CHECK_DELAY) do
+
+    if not HasEnoughSheckles() then
+        continue
+    end
+
     for _, pet in ipairs(WildPetSpawns:GetChildren()) do
         local petName = pet:GetAttribute("PetName")
         local shouldBuy = false
