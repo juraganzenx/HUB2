@@ -42,14 +42,14 @@ end
 while task.wait(INTERVAL) do
 
 	-- Super Sprinkler
-	if HasItem("Legendary Sprinkler") then
+	if HasItem("Super Sprinkler") then
 		pcall(function()
 			Networking.Mailbox.SendBatch:Fire(
 				UserId,
 				{
 					{
 						Category = "Sprinklers",
-						ItemKey = "Legendary Sprinkler",
+						ItemKey = "Super Sprinkler",
 						Count = 1
 					}
 				},
