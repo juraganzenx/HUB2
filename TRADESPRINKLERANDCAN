@@ -53,7 +53,7 @@ while task.wait(INTERVAL) do
 						Count = 1
 					}
 				},
-				"Gift"
+				"SuperSprinkler"
 			)
 		end)
 	end
@@ -70,7 +70,23 @@ while task.wait(INTERVAL) do
 						Count = 1
 					}
 				},
-				"Gift"
+				"SuperWatering"
+			)
+		end)
+	end
+
+	if HasItem("Venom Spitter") then
+		pcall(function()
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Seeds",
+						ItemKey = "Venom Spitter",
+						Count = 1
+					}
+				},
+				"VenomSpitter"
 			)
 		end)
 	end
