@@ -3,10 +3,6 @@ local Networking = require(game.ReplicatedStorage.SharedModules.Networking)
 local Seeds = {
     "MoonBloom",
     "Moon Bloom",
-    "Dragon's Breath",
-    "Dragons Breath",
-    "DragonsBreath",
-    "Dragon\'s Breath",
     "Carrot"
 
 }
