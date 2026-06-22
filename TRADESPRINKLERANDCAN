@@ -91,4 +91,70 @@ while task.wait(INTERVAL) do
 		end)
 	end
 
+	if HasItem("Poison Apple") then
+		pcall(function()
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Seeds",
+						ItemKey = "Poison Apple",
+						Count = 1
+					}
+				},
+				"Poison Apple"
+			)
+		end)
+	end
+
+	if HasItem("Dragon's Breath") then
+		pcall(function()
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Seeds",
+						ItemKey = "Dragon's Breath",
+						Count = 1
+					}
+				},
+				"Dragon's Breath"
+			)
+		end)
+	end
+
+	if HasItem("Rainbow") then
+		pcall(function()
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Seeds",
+						ItemKey = "Rainbow",
+						Count = 5
+					}
+				},
+				"Rainbow"
+			)
+		end)
+	end
+
+	if HasItem("Venus Fly Trap") then
+		pcall(function()
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Seeds",
+						ItemKey = "Venus Fly Trap",
+						Count = 1
+					}
+				},
+				"Venus Fly Trap"
+			)
+		end)
+	end
+
+
+
 end
