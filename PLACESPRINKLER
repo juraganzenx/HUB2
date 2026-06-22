@@ -1,0 +1,134 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local Networking = require(ReplicatedStorage.SharedModules.Networking)
+
+--------------------------------------------------
+-- CONFIG
+--------------------------------------------------
+
+local SPRINKLER_NAME = "Common Sprinkler"
+local CHECK_DELAY = 2
+
+--------------------------------------------------
+-- FUNCTIONS
+--------------------------------------------------
+
+local function GetPlot()
+    local PlotId = LocalPlayer:GetAttribute("PlotId")
+
+    if not PlotId then
+        return nil, nil
+    end
+
+    return workspace.Gardens:FindFirstChild("Plot" .. PlotId), PlotId
+end
+
+local function EquipSprinkler()
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local Backpack = LocalPlayer:WaitForChild("Backpack")
+
+    -- Sudah di-equip
+    for _, Tool in ipairs(Character:GetChildren()) do
+        if Tool:IsA("Tool") and Tool:GetAttribute("Sprinkler") == SPRINKLER_NAME then
+            return Tool
+        end
+    end
+
+    -- Cari di backpack
+    for _, Tool in ipairs(Backpack:GetChildren()) do
+        if Tool:IsA("Tool") and Tool:GetAttribute("Sprinkler") == SPRINKLER_NAME then
+            local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+
+            if Humanoid then
+                Humanoid:EquipTool(Tool)
+                task.wait(0.5)
+            end
+
+            return Character:FindFirstChild(Tool.Name) or Tool
+        end
+    end
+
+    warn(SPRINKLER_NAME .. " tidak ditemukan")
+    return nil
+end
+
+local function GetFrontBedPosition(Plot)
+    local Visual = Plot:FindFirstChild("Visual")
+
+    if not Visual then
+        return nil
+    end
+
+    local FrontBeds = {}
+
+    for _, Obj in ipairs(Visual:GetChildren()) do
+        if Obj.Name == "FRONT_BedSection" then
+            table.insert(FrontBeds, Obj)
+        end
+    end
+
+    local FirstBed = FrontBeds[1]
+
+    if not FirstBed then
+        return nil
+    end
+
+    local BottomFace = FirstBed:FindFirstChild("BottomFace")
+
+    if not BottomFace then
+        return nil
+    end
+
+    return BottomFace.Position
+end
+
+local function PlaceSprinkler()
+    local Plot, PlotId = GetPlot()
+
+    if not Plot then
+        return
+    end
+
+    local Sprinklers = Plot:FindFirstChild("Sprinklers")
+
+    if not Sprinklers then
+        return
+    end
+
+    -- Sudah ada sprinkler
+    if #Sprinklers:GetChildren() > 0 then
+        return
+    end
+
+    local Tool = EquipSprinkler()
+
+    if not Tool then
+        return
+    end
+
+    local Position = GetFrontBedPosition(Plot)
+
+    if not Position then
+        warn("BottomFace tidak ditemukan")
+        return
+    end
+
+    Networking.Place.PlaceSprinkler:Fire(
+        Position,
+        SPRINKLER_NAME,
+        Tool,
+        PlotId
+    )
+
+    print("Placed:", SPRINKLER_NAME)
+end
+
+--------------------------------------------------
+-- LOOP
+--------------------------------------------------
+
+while task.wait(CHECK_DELAY) do
+    pcall(PlaceSprinkler)
+end
