@@ -1,20 +1,54 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
 local Networking = require(game.ReplicatedStorage.SharedModules.Networking)
 
-local BuyList = {
-    "1Super Watering Can",
-    "1Super Sprinkler",
-    "1SuperWateringCan",
-    "1SuperSprinkler",
-    "1SuperWatering Can",
-    "1RareSprinkler",
-    "1Rare Sprinkler",
-    "1LegendarySprinkler",
-    "1Legendary Sprinkler",
+--------------------------------------------------
+-- CONFIG
+--------------------------------------------------
 
+local MIN_SHECKLES = 100000000
+
+local BuyList = {
+    "Super Watering Can",
+    "Super Sprinkler",
+    "SuperWateringCan",
+    "SuperSprinkler",
+    "SuperWatering Can",
 }
 
+--------------------------------------------------
+-- CHECK OWN SHECKLES
+--------------------------------------------------
+
+local function HasEnoughSheckles()
+    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+    if not leaderstats then
+        return false
+    end
+
+    local sheckles = leaderstats:FindFirstChild("Sheckles")
+    if not sheckles then
+        return false
+    end
+
+    return sheckles.Value > MIN_SHECKLES
+end
+
+--------------------------------------------------
+-- AUTO BUY
+--------------------------------------------------
+
 while task.wait(10) do
-    for i = 1, #BuyList do
-        Networking.GearShop.PurchaseGear:Fire(BuyList[i])
+    if HasEnoughSheckles() then
+        print("[AUTO BUY] Sheckles:", LocalPlayer.leaderstats.Sheckles.Value)
+
+        for _, GearName in ipairs(BuyList) do
+            pcall(function()
+                Networking.GearShop.PurchaseGear:Fire(GearName)
+            end)
+
+            task.wait(0.1)
+        end
     end
 end
