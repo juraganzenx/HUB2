@@ -3,7 +3,7 @@
 --------------------------------------------------
 
 local CHECK_DELAY = 2
-local MIN_SHECKLES = 100000000
+local MIN_SHECKLES = 80000000
 
 local WHITELIST = {
     ["Raccoon"] = true,
