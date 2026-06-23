@@ -7,7 +7,7 @@ local Networking = require(game.ReplicatedStorage.SharedModules.Networking)
 -- CONFIG
 --------------------------------------------------
 
-local MIN_SHECKLES = 80000000
+local MIN_SHECKLES = 10000
 
 local BuyList = {
     "Super Watering Can",
