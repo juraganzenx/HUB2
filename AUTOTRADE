@@ -21,6 +21,7 @@ local TARGET_PETS = {
     ["GoldenDragonfly"] = true,
     ["Golden Dragonfly"] = true,
     ["Bear"] = true,
+    ["Deer"] = true,
     
 }
 
