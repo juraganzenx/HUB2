@@ -10,6 +10,9 @@ local WHITELIST = {
     ["Unicorn"] = true,
     ["GoldenDragonfly"] = true,
     ["Bear"] = true,
+    ["Big Bunny"] = true,
+    ["BigBunny"] = true,
+    ["Deer"] = true,
 }
 
 local SIZE_PETS = {
