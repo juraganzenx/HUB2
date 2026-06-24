@@ -5,7 +5,10 @@ local Seeds = {
     "Moon Bloom",
     "Carrot"
     "Venom Spitter"
-
+    "VenomSpitter"
+    "Dragon's Breath"
+    "Dragon'sBreath"
+    "Dragon\'s Breath"
 }
 
 while task.wait(10) do
