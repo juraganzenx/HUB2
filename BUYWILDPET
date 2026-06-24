@@ -12,7 +12,6 @@ local WHITELIST = {
     ["Bear"] = true,
     ["Big Bunny"] = true,
     ["BigBunny"] = true,
-    ["Deer"] = true,
 }
 
 local SIZE_PETS = {
