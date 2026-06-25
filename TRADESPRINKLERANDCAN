@@ -155,6 +155,22 @@ while task.wait(INTERVAL) do
 		end)
 	end
 
+	if HasItem("Gold") then
+		pcall(function()
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Seeds",
+						ItemKey = "Gold",
+						Count = 1
+					}
+				},
+				"Gold"
+			)
+		end)
+	end
+
 	if HasItem("Moon Bloom") then
 		pcall(function()
 			Networking.Mailbox.SendBatch:Fire(
