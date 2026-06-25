@@ -4,12 +4,21 @@ local LocalPlayer = Players.LocalPlayer
 local Gardens = workspace:WaitForChild("Gardens")
 
 --------------------------------------------------
--- BLACKLIST
+-- CONFIG
 --------------------------------------------------
+
+local WORKERS = 100
 
 local BLACKLIST = {
     NAMEFRUIT = true,
 }
+
+--------------------------------------------------
+-- QUEUE
+--------------------------------------------------
+
+local FruitQueue = {}
+local Queued = {}
 
 --------------------------------------------------
 -- GET MY PLOT
@@ -28,7 +37,64 @@ local function GetMyPlot()
 end
 
 --------------------------------------------------
--- HARVEST PLANTS
+-- ADD TO QUEUE
+--------------------------------------------------
+
+local function QueueFruit(Fruit)
+    if Queued[Fruit] then
+        return
+    end
+
+    Queued[Fruit] = true
+    table.insert(FruitQueue, Fruit)
+end
+
+--------------------------------------------------
+-- WORKERS
+--------------------------------------------------
+
+for WorkerId = 1, WORKERS do
+    task.spawn(function()
+        while true do
+            local Fruit = table.remove(FruitQueue, 1)
+
+            if Fruit then
+                Queued[Fruit] = nil
+
+                pcall(function()
+                    if not Fruit.Parent then
+                        return
+                    end
+
+                    local CorePartName = Fruit:GetAttribute("CorePartName")
+
+                    if BLACKLIST[CorePartName] then
+                        return
+                    end
+
+                    local HarvestPart = Fruit:FindFirstChild("HarvestPart")
+
+                    if not HarvestPart then
+                        return
+                    end
+
+                    local HarvestPrompt = HarvestPart:FindFirstChild("HarvestPrompt")
+
+                    if not HarvestPrompt then
+                        return
+                    end
+
+                    fireproximityprompt(HarvestPrompt)
+                end)
+            else
+                task.wait()
+            end
+        end
+    end)
+end
+
+--------------------------------------------------
+-- PLANT HARVEST THREAD
 --------------------------------------------------
 
 task.spawn(function()
@@ -49,11 +115,13 @@ task.spawn(function()
             local HarvestPart = Plant:FindFirstChild("HarvestPart")
 
             if HarvestPart then
-                local HarvestPrompt = HarvestPart:FindFirstChild("HarvestPrompt")
+                local Prompt = HarvestPart:FindFirstChild("HarvestPrompt")
 
-                if HarvestPrompt and HarvestPrompt:IsA("ProximityPrompt") then
-                    pcall(function()
-                        fireproximityprompt(HarvestPrompt)
+                if Prompt then
+                    task.spawn(function()
+                        pcall(function()
+                            fireproximityprompt(Prompt)
+                        end)
                     end)
                 end
             end
@@ -62,7 +130,7 @@ task.spawn(function()
 end)
 
 --------------------------------------------------
--- HARVEST MUTATION FRUITS
+-- MUTATION SCANNER
 --------------------------------------------------
 
 task.spawn(function()
@@ -82,30 +150,10 @@ task.spawn(function()
         for _, Plant in ipairs(Plants:GetChildren()) do
             local Fruits = Plant:FindFirstChild("Fruits")
 
-            if not Fruits then
-                continue
-            end
-
-            for _, Fruit in ipairs(Fruits:GetChildren()) do
-                if not Fruit:GetAttribute("Mutation") then
-                    continue
-                end
-
-                local CorePartName = Fruit:GetAttribute("CorePartName")
-
-                if BLACKLIST[CorePartName] then
-                    continue
-                end
-
-                local HarvestPart = Fruit:FindFirstChild("HarvestPart")
-
-                if HarvestPart then
-                    local HarvestPrompt = HarvestPart:FindFirstChild("HarvestPrompt")
-
-                    if HarvestPrompt and HarvestPrompt:IsA("ProximityPrompt") then
-                        pcall(function()
-                            fireproximityprompt(HarvestPrompt)
-                        end)
+            if Fruits then
+                for _, Fruit in ipairs(Fruits:GetChildren()) do
+                    if Fruit:GetAttribute("Mutation") then
+                        QueueFruit(Fruit)
                     end
                 end
             end
@@ -114,7 +162,7 @@ task.spawn(function()
 end)
 
 --------------------------------------------------
--- HARVEST NON-MUTATION FRUITS
+-- NON-MUTATION SCANNER
 --------------------------------------------------
 
 task.spawn(function()
@@ -134,30 +182,10 @@ task.spawn(function()
         for _, Plant in ipairs(Plants:GetChildren()) do
             local Fruits = Plant:FindFirstChild("Fruits")
 
-            if not Fruits then
-                continue
-            end
-
-            for _, Fruit in ipairs(Fruits:GetChildren()) do
-                if Fruit:GetAttribute("Mutation") then
-                    continue
-                end
-
-                local CorePartName = Fruit:GetAttribute("CorePartName")
-
-                if BLACKLIST[CorePartName] then
-                    continue
-                end
-
-                local HarvestPart = Fruit:FindFirstChild("HarvestPart")
-
-                if HarvestPart then
-                    local HarvestPrompt = HarvestPart:FindFirstChild("HarvestPrompt")
-
-                    if HarvestPrompt and HarvestPrompt:IsA("ProximityPrompt") then
-                        pcall(function()
-                            fireproximityprompt(HarvestPrompt)
-                        end)
+            if Fruits then
+                for _, Fruit in ipairs(Fruits:GetChildren()) do
+                    if not Fruit:GetAttribute("Mutation") then
+                        QueueFruit(Fruit)
                     end
                 end
             end
@@ -165,4 +193,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ Auto Harvest Parallel Loaded")
+print(("✅ Auto Harvest Loaded (%d Workers)"):format(WORKERS))
