@@ -3,12 +3,18 @@ local LocalPlayer = Players.LocalPlayer
 
 local Gardens = workspace:WaitForChild("Gardens")
 
--- Blacklist Fruit berdasarkan CorePartName
+--------------------------------------------------
+-- BLACKLIST
+--------------------------------------------------
+
 local BLACKLIST = {
     NAMEFRUIT = true,
 }
 
--- Cari plot milik player
+--------------------------------------------------
+-- GET MY PLOT
+--------------------------------------------------
+
 local function GetMyPlot()
     for i = 1, 8 do
         local Plot = Gardens:FindFirstChild("Plot" .. i)
@@ -21,49 +27,65 @@ local function GetMyPlot()
     return nil
 end
 
-while task.wait(0) do
-    local MyPlot = GetMyPlot()
+--------------------------------------------------
+-- HARVEST PLANTS
+--------------------------------------------------
 
-    if not MyPlot then
-        warn("❌ Plot milikmu tidak ditemukan!")
-        continue
-    end
+task.spawn(function()
+    while task.wait(0) do
+        local MyPlot = GetMyPlot()
 
-    local Plants = MyPlot:FindFirstChild("Plants")
-
-    if not Plants then
-        warn("❌ Folder Plants tidak ditemukan!")
-        continue
-    end
-
-    local harvested = 0
-
-    for _, Plant in ipairs(Plants:GetChildren()) do
-        ----------------------------------------------------------------
-        -- Harvest Plant
-        ----------------------------------------------------------------
-        local HarvestPart = Plant:FindFirstChild("HarvestPart")
-
-        if HarvestPart then
-            local HarvestPrompt = HarvestPart:FindFirstChild("HarvestPrompt")
-
-            if HarvestPrompt and HarvestPrompt:IsA("ProximityPrompt") then
-                pcall(function()
-                    fireproximityprompt(HarvestPrompt)
-                end)
-
-                harvested += 1
-                task.wait(0.01)
-            end
+        if not MyPlot then
+            continue
         end
 
-        ----------------------------------------------------------------
-        -- Harvest Fruits (Prioritas Mutation)
-        ----------------------------------------------------------------
-        local Fruits = Plant:FindFirstChild("Fruits")
+        local Plants = MyPlot:FindFirstChild("Plants")
 
-        if Fruits then
-            -- PASS 1: Harvest buah yang punya Mutation dulu
+        if not Plants then
+            continue
+        end
+
+        for _, Plant in ipairs(Plants:GetChildren()) do
+            local HarvestPart = Plant:FindFirstChild("HarvestPart")
+
+            if HarvestPart then
+                local HarvestPrompt = HarvestPart:FindFirstChild("HarvestPrompt")
+
+                if HarvestPrompt and HarvestPrompt:IsA("ProximityPrompt") then
+                    pcall(function()
+                        fireproximityprompt(HarvestPrompt)
+                    end)
+                end
+            end
+        end
+    end
+end)
+
+--------------------------------------------------
+-- HARVEST MUTATION FRUITS
+--------------------------------------------------
+
+task.spawn(function()
+    while task.wait(0) do
+        local MyPlot = GetMyPlot()
+
+        if not MyPlot then
+            continue
+        end
+
+        local Plants = MyPlot:FindFirstChild("Plants")
+
+        if not Plants then
+            continue
+        end
+
+        for _, Plant in ipairs(Plants:GetChildren()) do
+            local Fruits = Plant:FindFirstChild("Fruits")
+
+            if not Fruits then
+                continue
+            end
+
             for _, Fruit in ipairs(Fruits:GetChildren()) do
                 if not Fruit:GetAttribute("Mutation") then
                     continue
@@ -72,27 +94,50 @@ while task.wait(0) do
                 local CorePartName = Fruit:GetAttribute("CorePartName")
 
                 if BLACKLIST[CorePartName] then
-                    print("⏭️ Skip Fruit:", Fruit.Name, "|", CorePartName)
                     continue
                 end
 
-                local FruitHarvestPart = Fruit:FindFirstChild("HarvestPart")
+                local HarvestPart = Fruit:FindFirstChild("HarvestPart")
 
-                if FruitHarvestPart then
-                    local FruitPrompt = FruitHarvestPart:FindFirstChild("HarvestPrompt")
+                if HarvestPart then
+                    local HarvestPrompt = HarvestPart:FindFirstChild("HarvestPrompt")
 
-                    if FruitPrompt and FruitPrompt:IsA("ProximityPrompt") then
+                    if HarvestPrompt and HarvestPrompt:IsA("ProximityPrompt") then
                         pcall(function()
-                            fireproximityprompt(FruitPrompt)
+                            fireproximityprompt(HarvestPrompt)
                         end)
-
-                        harvested += 1
-                        task.wait(0.01)
                     end
                 end
             end
+        end
+    end
+end)
 
-            -- PASS 2: Harvest buah biasa
+--------------------------------------------------
+-- HARVEST NON-MUTATION FRUITS
+--------------------------------------------------
+
+task.spawn(function()
+    while task.wait(0) do
+        local MyPlot = GetMyPlot()
+
+        if not MyPlot then
+            continue
+        end
+
+        local Plants = MyPlot:FindFirstChild("Plants")
+
+        if not Plants then
+            continue
+        end
+
+        for _, Plant in ipairs(Plants:GetChildren()) do
+            local Fruits = Plant:FindFirstChild("Fruits")
+
+            if not Fruits then
+                continue
+            end
+
             for _, Fruit in ipairs(Fruits:GetChildren()) do
                 if Fruit:GetAttribute("Mutation") then
                     continue
@@ -101,32 +146,23 @@ while task.wait(0) do
                 local CorePartName = Fruit:GetAttribute("CorePartName")
 
                 if BLACKLIST[CorePartName] then
-                    print("⏭️ Skip Fruit:", Fruit.Name, "|", CorePartName)
                     continue
                 end
 
-                local FruitHarvestPart = Fruit:FindFirstChild("HarvestPart")
+                local HarvestPart = Fruit:FindFirstChild("HarvestPart")
 
-                if FruitHarvestPart then
-                    local FruitPrompt = FruitHarvestPart:FindFirstChild("HarvestPrompt")
+                if HarvestPart then
+                    local HarvestPrompt = HarvestPart:FindFirstChild("HarvestPrompt")
 
-                    if FruitPrompt and FruitPrompt:IsA("ProximityPrompt") then
+                    if HarvestPrompt and HarvestPrompt:IsA("ProximityPrompt") then
                         pcall(function()
-                            fireproximityprompt(FruitPrompt)
+                            fireproximityprompt(HarvestPrompt)
                         end)
-
-                        harvested += 1
-                        task.wait(0.01)
                     end
                 end
             end
         end
     end
+end)
 
-    print(string.format(
-        "✅ [%s] Harvest selesai | Plants: %d | Total Harvest: %d",
-        MyPlot.Name,
-        #Plants:GetChildren(),
-        harvested
-    ))
-end
+print("✅ Auto Harvest Parallel Loaded")
