@@ -183,22 +183,28 @@ local TWEEN_SPEED = 16
 
 while task.wait(CHECK_DELAY) do
 
-    if not HasEnoughSheckles() then
-        continue
-    end
-
     for _, pet in ipairs(WildPetSpawns:GetChildren()) do
         local petName = pet:GetAttribute("PetName")
         local shouldBuy = false
 
-        -- Pet whitelist langsung beli
-        if petName and WHITELIST[petName] then
+        -- Raccoon selalu boleh dibeli
+        if petName == "Raccoon" then
             shouldBuy = true
-        end
+        else
+            -- Pet lain harus memenuhi minimal sheckles
+            if not HasEnoughSheckles() then
+                continue
+            end
 
-        -- Bunny/Frog/Deer/Robin/Owl/Bee hanya jika punya Attribute Size
-        if petName and SIZE_PETS[petName] and pet:GetAttribute("Size") ~= nil then
-            shouldBuy = true
+            -- Pet whitelist
+            if petName and WHITELIST[petName] then
+                shouldBuy = true
+            end
+
+            -- Bunny/Frog/Deer/Robin/Owl/Bee hanya jika punya Size
+            if petName and SIZE_PETS[petName] and pet:GetAttribute("Size") ~= nil then
+                shouldBuy = true
+            end
         end
 
         if shouldBuy then
@@ -211,10 +217,7 @@ while task.wait(CHECK_DELAY) do
                     local hrp = GetRoot()
 
                     local targetCFrame = root.CFrame
-
-                    local distance =
-                        (hrp.Position - targetCFrame.Position).Magnitude
-
+                    local distance = (hrp.Position - targetCFrame.Position).Magnitude
                     local duration = distance / TWEEN_SPEED
 
                     local tween = TweenService:Create(
