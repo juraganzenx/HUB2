@@ -50,7 +50,7 @@ while task.wait(INTERVAL) do
 					{
 						Category = "Sprinklers",
 						ItemKey = "Super Sprinkler",
-						Count = 1
+						Count = 2
 					}
 				},
 				"SuperSprinkler"
@@ -67,7 +67,7 @@ while task.wait(INTERVAL) do
 					{
 						Category = "WateringCans",
 						ItemKey = "Super Watering Can",
-						Count = 1
+						Count = 2
 					}
 				},
 				"SuperWatering"
