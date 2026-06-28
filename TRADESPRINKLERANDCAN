@@ -124,21 +124,7 @@ while task.wait(INTERVAL) do
 		end)
 	end
 
-	if HasItem("Rainbow") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Rainbow",
-						Count = 5
-					}
-				},
-				"Rainbow"
-			)
-		end)
-	end
+	
 
 	if HasItem("Venus Fly Trap") then
 		pcall(function()
@@ -156,21 +142,7 @@ while task.wait(INTERVAL) do
 		end)
 	end
 
-	if HasItem("Gold") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Gold",
-						Count = 10
-					}
-				},
-				"Gold"
-			)
-		end)
-	end
+	
 
 	if HasItem("Moon Bloom") then
 		pcall(function()
@@ -204,21 +176,7 @@ while task.wait(INTERVAL) do
 		end)
 	end
 
-	if HasItem("Legendary Sprinkler") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Sprinklers",
-						ItemKey = "Legendary Sprinkler",
-						Count = 50
-					}
-				},
-				"LegendarySprinkler"
-			)
-		end)
-	end
+	
 
 
 
