@@ -102,7 +102,7 @@ while task.wait() do
                             end)
 
                             harvested += 1
-                            task.wait(0.01)
+                            task.wait(0.003)
                         end
                     end
                 end
@@ -129,7 +129,7 @@ while task.wait() do
                             end)
 
                             harvested += 1
-                            task.wait(0.01)
+                            task.wait(0.005)
                         end
                     end
                 end
