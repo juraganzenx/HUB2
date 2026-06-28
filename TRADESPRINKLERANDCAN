@@ -41,39 +41,6 @@ end
 
 while task.wait(INTERVAL) do
 
-	-- Super Sprinkler
-	if HasItem("Super Sprinkler") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Sprinklers",
-						ItemKey = "Super Sprinkler",
-						Count = 2
-					}
-				},
-				"SuperSprinkler"
-			)
-		end)
-	end
-
-	-- Super Watering Can
-	if HasItem("Super Watering Can") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "WateringCans",
-						ItemKey = "Super Watering Can",
-						Count = 2
-					}
-				},
-				"SuperWatering"
-			)
-		end)
-	end
 
 	if HasItem("Venom Spitter") then
 		pcall(function()
