@@ -9,7 +9,7 @@ local Networking = require(ReplicatedStorage.SharedModules.Networking)
 --------------------------------------------------
 
 local USERNAME = "sangjukie"
-local INTERVAL = 60
+local INTERVAL = 15
 
 --------------------------------------------------
 -- GET USER ID
