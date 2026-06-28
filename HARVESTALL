@@ -87,7 +87,7 @@ while task.wait() do
                     local CorePartName = Fruit:GetAttribute("CorePartName")
 
                     if BLACKLIST[CorePartName] then
-                        print("⏭️ Skip Fruit:", Fruit.Name, "|", CorePartName)
+                    
                         continue
                     end
 
@@ -114,7 +114,7 @@ while task.wait() do
                     local CorePartName = Fruit:GetAttribute("CorePartName")
 
                     if BLACKLIST[CorePartName] then
-                        print("⏭️ Skip Fruit:", Fruit.Name, "|", CorePartName)
+                    
                         continue
                     end
 
