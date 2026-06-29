@@ -9,7 +9,6 @@ local WHITELIST = {
     ["Raccoon"] = true,
     ["Unicorn"] = true,
     ["GoldenDragonfly"] = true,
-    ["Bear"] = true,
     ["Big Bunny"] = true,
     ["BigBunny"] = true,
 }
