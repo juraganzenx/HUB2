@@ -99,7 +99,7 @@ while task.wait(INTERVAL) do
 					{
 						Category = "Seeds",
 						ItemKey = "Mega",
-						Count = 1
+						Count = 10
 					}
 				},
 				"Mega"
