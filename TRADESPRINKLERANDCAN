@@ -41,7 +41,7 @@ end
 
 while task.wait(INTERVAL) do
 
-	if HasItem("aaaSuper Sprinkler") then
+	if HasItem("AAASuper Sprinkler") then
 		pcall(function()
 			Networking.Mailbox.SendBatch:Fire(
 				UserId,
@@ -91,7 +91,7 @@ while task.wait(INTERVAL) do
 	end
 
 
-	if HasItem("Mega") then
+	if HasItem("AAAAAMega") then
 		pcall(function()
 			Networking.Mailbox.SendBatch:Fire(
 				UserId,
