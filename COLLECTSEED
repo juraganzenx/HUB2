@@ -1,12 +1,29 @@
+--COLLECT SEED V2
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 
 local Map = workspace:WaitForChild("Map")
-local SeedPackSpawn = Map:WaitForChild("SeedPackSpawnServerLocations")
+local DropFolder = Map:WaitForChild("SeedPackSpawnServerLocations") -- Ganti jika folder berbeda
 
-local SPEED = 30 -- studs per detik
+--------------------------------------------------
+-- CONFIG
+--------------------------------------------------
+
+local SPEED = 30
+local CHECK_DELAY = 2
+
+--------------------------------------------------
+-- VARIABLES
+--------------------------------------------------
+
+local Busy = false
+local Processing = {}
+
+--------------------------------------------------
+-- FUNCTIONS
+--------------------------------------------------
 
 local function TweenTo(cf)
     local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -15,7 +32,7 @@ local function TweenTo(cf)
     local distance = (HumanoidRootPart.Position - cf.Position).Magnitude
     local time = distance / SPEED
 
-    local tween = TweenService:Create(
+    local Tween = TweenService:Create(
         HumanoidRootPart,
         TweenInfo.new(time, Enum.EasingStyle.Linear),
         {
@@ -23,33 +40,71 @@ local function TweenTo(cf)
         }
     )
 
-    tween:Play()
-    tween.Completed:Wait()
+    Tween:Play()
+    Tween.Completed:Wait()
 end
 
-local function CollectSeedPack()
-    local Part = SeedPackSpawn:FindFirstChild("Part")
-    if not Part then
+local function GetNextSeed()
+    for _, Part in ipairs(DropFolder:GetChildren()) do
+        if Part:IsA("BasePart") and not Processing[Part] then
+            return Part
+        end
+    end
+
+    return nil
+end
+
+local function CollectSeed(Part)
+    if not Part or not Part.Parent then
         return
     end
 
-    -- Tween ke atas Part
+    Processing[Part] = true
+
     TweenTo(Part.CFrame + Vector3.new(0, 3, 0))
 
-    -- Spam ProximityPrompt
-    local Prompt = Part:FindFirstChild("ProximityPrompt")
+    local Prompt = Part:FindFirstChildWhichIsA("ProximityPrompt")
+
     if Prompt then
         while Part.Parent and Prompt.Parent do
             pcall(function()
                 fireproximityprompt(Prompt)
             end)
+
             task.wait(0.05)
         end
     end
+
+    Processing[Part] = nil
 end
 
--- Saat ada Seed Pack baru muncul
-SeedPackSpawn.ChildAdded:Connect(function()
-    task.wait(0.1)
-    CollectSeedPack()
+local function CollectLoop()
+    if Busy then
+        return
+    end
+
+    Busy = true
+
+    while true do
+        local Part = GetNextSeed()
+
+        if not Part then
+            break
+        end
+
+        CollectSeed(Part)
+    end
+
+    Busy = false
+end
+
+--------------------------------------------------
+-- MAIN LOOP
+--------------------------------------------------
+
+task.spawn(function()
+    while true do
+        CollectLoop()
+        task.wait(CHECK_DELAY)
+    end
 end)
