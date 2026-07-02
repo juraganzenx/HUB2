@@ -8,7 +8,7 @@ local Networking = require(ReplicatedStorage.SharedModules.Networking)
 -- CONFIG
 --------------------------------------------------
 
-local SPRINKLER_NAME = "Common Sprinkler"
+local SPRINKLER_NAME = "aaaCommon Sprinkler"
 local CHECK_DELAY = 2
 
 --------------------------------------------------
