@@ -7,6 +7,9 @@ local MIN_SHECKLES = 80000000
 
 local WHITELIST = {
     ["Raccoon"] = true,
+    ["Bald Eagle"] = true,
+    ["BaldEagle"] = true,
+    ["Butterfly"] = true,
 }
 
 local SIZE_PETS = {
