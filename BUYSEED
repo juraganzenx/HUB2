@@ -11,6 +11,7 @@ local Seeds = {
     "Dragon\'s Breath",
     "Hypno Bloom",
     "HypnoBloom",
+    "Rocket Pop",
 }
 
 while task.wait(10) do
