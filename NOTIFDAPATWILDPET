@@ -8,6 +8,142 @@ local Gardens = workspace:WaitForChild("Gardens")
 -- CONFIG
 --------------------------------------------------
 
+local WEBHOOK = "WEBHOOK_DISCORD_KAMU"
+local CHECK_DELAY = 1
+local KG_LIMIT = 15
+
+--------------------------------------------------
+-- CACHE
+--------------------------------------------------
+
+local Sent = {}
+
+--------------------------------------------------
+-- MY PLOT
+--------------------------------------------------
+
+local function GetMyPlot()
+    for i = 1, 8 do
+        local Plot = Gardens:FindFirstChild("Plot" .. i)
+
+        if Plot and Plot:GetAttribute("Owner") == LocalPlayer.Name then
+            return Plot
+        end
+    end
+end
+
+--------------------------------------------------
+-- DISCORD
+--------------------------------------------------
+
+local function SendDiscord(KG, Mutation)
+    local Data = {
+        content = "@everyone",
+
+        allowed_mentions = {
+            parse = {"everyone"}
+        },
+
+        embeds = {{
+            title = "🥕 Carrot Mutation Detected",
+            color = 16753920,
+            fields = {
+                {
+                    name = "Player",
+                    value = LocalPlayer.Name,
+                    inline = true
+                },
+                {
+                    name = "Plant",
+                    value = "Carrot",
+                    inline = true
+                },
+                {
+                    name = "Weight",
+                    value = string.format("%.2f KG", KG),
+                    inline = true
+                },
+                {
+                    name = "Mutation",
+                    value = tostring(Mutation),
+                    inline = true
+                },
+                {
+                    name = "JobId",
+                    value = game.JobId,
+                    inline = false
+                }
+            },
+            footer = {
+                text = "Auto Carrot Detector"
+            },
+            timestamp = DateTime.now():ToIsoDate()
+        }}
+    }
+
+    request({
+        Url = WEBHOOK,
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json"
+        },
+        Body = HttpService:JSONEncode(Data)
+    })
+end
+
+--------------------------------------------------
+-- LOOP
+--------------------------------------------------
+
+while task.wait(CHECK_DELAY) do
+    local Plot = GetMyPlot()
+
+    if not Plot then
+        continue
+    end
+
+    for _, Plant in ipairs(Plot.Plants:GetChildren()) do
+
+        -- Hanya plant yang tidak memiliki Fruits
+        if not Plant:FindFirstChild("Fruits") then
+
+            local SeedName = Plant:GetAttribute("SeedName")
+            local Mutation = Plant:GetAttribute("Mutation")
+            local PlantId = Plant:GetAttribute("PlantId")
+            local Part = Plant:FindFirstChild("1")
+
+            if SeedName == "Carrot"
+                and Mutation ~= nil
+                and PlantId
+                and Part
+                and Part:IsA("BasePart") then
+
+                local KG = Part.Size.X * 1.067
+
+                if KG > KG_LIMIT and not Sent[PlantId] then
+                    Sent[PlantId] = true
+
+                    print(string.format(
+                        "[CARROT] %.2f KG | Mutation: %s",
+                        KG,
+                        tostring(Mutation)
+                    ))
+
+                    SendDiscord(KG, Mutation)
+                end
+            end
+        end
+    end
+endlocal Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+local LocalPlayer = Players.LocalPlayer
+local Gardens = workspace:WaitForChild("Gardens")
+
+--------------------------------------------------
+-- CONFIG
+--------------------------------------------------
+
 local WEBHOOK = "https://discord.com/api/webhooks/1476987739898515571/46Ws80ynwg5pYRC_ioOxxiYwwsS4odCDEySKSdZ8r4DNSsdrQPzTmjh49Tomq_1Wt1kO"
 local CHECK_DELAY = 1
 
