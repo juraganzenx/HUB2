@@ -168,7 +168,7 @@ task.spawn(function()
 
             if PlantId
                 and TARGET_SEEDS[SeedName]
-                and Mutation ~= "Gold"
+                and Mutation = "Gold" 
                 and Mutation ~= "Rainbow" then
 
                 pcall(function()
