@@ -130,4 +130,5 @@ while task.wait(CHECK_DELAY) do
             end
         end
     end
+task.wait(1000)
 end
