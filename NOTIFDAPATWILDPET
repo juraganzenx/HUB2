@@ -1,120 +1,133 @@
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
-local Backpack = LocalPlayer:WaitForChild("Backpack")
+local Gardens = workspace:WaitForChild("Gardens")
 
--- GANTI WEBHOOK
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1476987739898515571/46Ws80ynwg5pYRC_ioOxxiYwwsS4odCDEySKSdZ8r4DNSsdrQPzTmjh49Tomq_1Wt1kO"
+--------------------------------------------------
+-- CONFIG
+--------------------------------------------------
 
-local lastCount = {
-    ["Raccoon"] = 0,
-    ["Unicorn"] = 0,
-    ["Golden Dragonfly"] = 0
-}
+local WEBHOOK = "WEBHOOK_DISCORD_KAMU"
+local CHECK_DELAY = 1
 
-local function CountPet(name)
-    local total = 0
+--------------------------------------------------
+-- CACHE
+--------------------------------------------------
 
-    for _,v in ipairs(Backpack:GetChildren()) do
-        if v.Name == name then
-            total += 1
+local Sent = {}
+
+--------------------------------------------------
+-- MY PLOT
+--------------------------------------------------
+
+local function GetMyPlot()
+    for i = 1, 8 do
+        local Plot = Gardens:FindFirstChild("Plot" .. i)
+
+        if Plot and Plot:GetAttribute("Owner") == LocalPlayer.Name then
+            return Plot
         end
     end
-
-    return total
 end
 
-local function SendDiscord(addedPet, addedAmount)
-    local shackles = "Unknown"
+--------------------------------------------------
+-- DISCORD
+--------------------------------------------------
 
-    pcall(function()
-        shackles = LocalPlayer.PlayerGui
-            .HUD
-            .Currencies
-            .CoinCounter
-            .TextLabel
-            .Text
-    end)
+local function SendDiscord(PlantName, KG, Mutation)
+    local Data = {
+        content = "@everyone",
 
-    local raccoon = CountPet("Raccoon")
-    local unicorn = CountPet("Unicorn")
-    local dragonfly = CountPet("Golden Dragonfly")
+        allowed_mentions = {
+            parse = {"everyone"}
+        },
 
-    local message =
-        "**" .. string.upper(addedPet) .. " ADDED**\n\n" ..
-        "Nama : " .. LocalPlayer.Name .. "\n\n" ..
-        "Pet :\n" ..
-        "Raccoon " .. raccoon ..
-            (addedPet == "Raccoon" and (" (+" .. addedAmount .. ")") or "") .. "\n" ..
-        "Unicorn " .. unicorn ..
-            (addedPet == "Unicorn" and (" (+" .. addedAmount .. ")") or "") .. "\n" ..
-        "Golden Dragonfly " .. dragonfly ..
-            (addedPet == "Golden Dragonfly" and (" (+" .. addedAmount .. ")") or "") .. "\n\n" ..
-        "Jumlah Shackles : " .. shackles
+        embeds = {{
+            title = "🥕 Mutated Carrot Detected",
+            color = 16753920,
 
-    local data = {
-        content = message
+            fields = {
+                {
+                    name = "Player",
+                    value = LocalPlayer.Name,
+                    inline = true
+                },
+                {
+                    name = "Plant",
+                    value = PlantName,
+                    inline = true
+                },
+                {
+                    name = "Weight",
+                    value = string.format("%.2f KG", KG),
+                    inline = true
+                },
+                {
+                    name = "Mutation",
+                    value = tostring(Mutation),
+                    inline = true
+                },
+                {
+                    name = "JobId",
+                    value = game.JobId,
+                    inline = false
+                }
+            },
+
+            footer = {
+                text = "Auto Carrot Detector"
+            }
+        }}
     }
 
-    if syn and syn.request then
-        syn.request({
-            Url = WEBHOOK_URL,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = HttpService:JSONEncode(data)
-        })
-    elseif http_request then
-        http_request({
-            Url = WEBHOOK_URL,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = HttpService:JSONEncode(data)
-        })
-    elseif request then
-        request({
-            Url = WEBHOOK_URL,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = HttpService:JSONEncode(data)
-        })
+    request({
+        Url = WEBHOOK,
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json"
+        },
+        Body = HttpService:JSONEncode(Data)
+    })
+end
+
+--------------------------------------------------
+-- LOOP
+--------------------------------------------------
+
+while task.wait(CHECK_DELAY) do
+    local Plot = GetMyPlot()
+
+    if not Plot then
+        continue
     end
-end
 
--- Inisialisasi jumlah awal
-for pet,_ in pairs(lastCount) do
-    lastCount[pet] = CountPet(pet)
-end
+    for _, Plant in ipairs(Plot.Plants:GetChildren()) do
 
-local function CheckPets()
-    for pet,old in pairs(lastCount) do
-        local now = CountPet(pet)
+        if not Plant:FindFirstChild("Fruits") then
 
-        if now > old then
-            SendDiscord(pet, now - old)
+            local SeedName = Plant:GetAttribute("SeedName")
+            local Mutation = Plant:GetAttribute("Mutation")
+            local PlantId = Plant:GetAttribute("PlantId")
+            local Part = Plant:FindFirstChild("1")
+
+            if SeedName == "Carrot"
+                and Mutation ~= nil
+                and PlantId
+                and Part
+                and Part:IsA("BasePart")
+                and not Sent[PlantId] then
+
+                Sent[PlantId] = true
+
+                local KG = Part.Size.X * 1.067
+
+                SendDiscord(
+                    SeedName,
+                    KG,
+                    Mutation
+                )
+            end
         end
-
-        lastCount[pet] = now
     end
-end
-
-Backpack.ChildAdded:Connect(function()
-    task.wait(0.5)
-    CheckPets()
-end)
-
-Backpack.ChildRemoved:Connect(function()
-    task.wait(0.5)
-    CheckPets()
-end)
-
-while true do
-    task.wait(5)
-    CheckPets()
 end
