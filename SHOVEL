@@ -20,6 +20,7 @@ local TARGET_SEEDS = {
     Coconut = true,
     Greenbean = true,
     Banana = true,
+    Mango = true,
 }
 
 getgenv().AutoShovel = false
