@@ -1,36 +1,58 @@
---DESTROY PLOT ORANG
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+--DESTROY PLOT BISA HARVEST V2
+local Gardens = workspace:WaitForChild("Gardens")
 
-local function GetMyPlot()
-    local PlotId = LocalPlayer:GetAttribute("PlotId")
-    if not PlotId then
-        return nil
-    end
+local function ProcessPlot(Plot)
+    for _, Obj in ipairs(Plot:GetDescendants()) do
+        if Obj.Name == "HarvestPart" then
+            continue
+        end
 
-    return workspace.Gardens:FindFirstChild("Plot" .. PlotId)
-end
+        local IsInsideHarvestPart = false
+        local Parent = Obj.Parent
 
-local function RemoveOtherPlots()
-    local MyPlot = GetMyPlot()
-    if not MyPlot then
-        return
-    end
+        while Parent and Parent ~= Plot do
+            if Parent.Name == "HarvestPart" then
+                IsInsideHarvestPart = true
+                break
+            end
+            Parent = Parent.Parent
+        end
 
-    for _, Plot in ipairs(workspace.Gardens:GetChildren()) do
-        if Plot ~= MyPlot then
-            Plot:Destroy() -- atau Plot.Parent = nil jika lebih aman
+        if not IsInsideHarvestPart and Obj:IsA("BasePart") then
+            Obj:Destroy()
         end
     end
+
+    Plot.DescendantAdded:Connect(function(Obj)
+        if Obj.Name == "HarvestPart" then
+            return
+        end
+
+        local Parent = Obj.Parent
+        while Parent and Parent ~= Plot do
+            if Parent.Name == "HarvestPart" then
+                return
+            end
+            Parent = Parent.Parent
+        end
+
+        if Obj:IsA("BasePart") and Obj.Parent then
+            task.defer(function()
+                if Obj.Parent then
+                    Obj:Destroy()
+                end
+            end)
+        end
+    end)
 end
 
-RemoveOtherPlots()
+for _, Plot in ipairs(Gardens:GetChildren()) do
+    ProcessPlot(Plot)
+end
 
-workspace.Gardens.ChildAdded:Connect(function(Plot)
-    task.wait()
-
-    local MyPlot = GetMyPlot()
-    if MyPlot and Plot ~= MyPlot then
-        Plot:Destroy()
+Gardens.ChildAdded:Connect(function(Plot)
+    task.wait(1) -- tunggu plot selesai load
+    if Plot.Parent then
+        ProcessPlot(Plot)
     end
 end)
