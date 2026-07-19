@@ -5,6 +5,23 @@ local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 
+--------------------------------------------------
+-- ANTI AFK
+--------------------------------------------------
+
+local VirtualUser = game:GetService("VirtualUser")
+
+LocalPlayer.Idled:Connect(function()
+
+	print("Anti AFK Triggered")
+
+	VirtualUser:CaptureController()
+	VirtualUser:ClickButton2(
+		Vector2.new()
+	)
+
+end)
+
 local DropFolder = workspace:WaitForChild("DroppedItems")
 
 --------------------------------------------------
