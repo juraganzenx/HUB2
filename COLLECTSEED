@@ -11,27 +11,20 @@ local LocalPlayer = Players.LocalPlayer
 
 local VirtualUser = game:GetService("VirtualUser")
 
+task.spawn(function()
+    while task.wait(60) do
+        pcall(function()
+            VirtualUser:CaptureController()
 
-LocalPlayer.Idled:Connect(function()
-    pcall(function()
-        VirtualUser:CaptureController()
+            local Camera = workspace.CurrentCamera
 
-        local Camera = workspace.CurrentCamera
+            VirtualUser:Button2Down(Vector2.new(0,0), Camera.CFrame)
+            task.wait(0.1)
+            VirtualUser:Button2Up(Vector2.new(0,0), Camera.CFrame)
 
-        VirtualUser:Button2Down(
-            Vector2.new(0, 0),
-            Camera.CFrame
-        )
-
-        task.wait(1)
-
-        VirtualUser:Button2Up(
-            Vector2.new(0, 0),
-            Camera.CFrame
-        )
-
-        print("Anti AFK")
-    end)
+            print("Anti AFK Ping")
+        end)
+    end
 end)
 
 local DropFolder = workspace:WaitForChild("DroppedItems")
