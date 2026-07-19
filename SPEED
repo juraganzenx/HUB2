@@ -1,4 +1,4 @@
-while task.wait(20) do
+while task.wait(30) do
     local Character = game.Players.LocalPlayer.Character
     local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
 
