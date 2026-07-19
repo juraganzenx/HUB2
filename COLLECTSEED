@@ -1,4 +1,4 @@
---// COLLECT DROPPED ITEMS V3
+--// COLLECT DROPPED ITEMS V4 + TARGET PLAYER CHECK
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -13,7 +13,10 @@ local DropFolder = workspace:WaitForChild("DroppedItems")
 
 local SPEED = 30
 local CHECK_DELAY = 2
-local MAX_SHECKLES = 100000000000 -- Stop collect jika > 1B
+local MAX_SHECKLES = 100000000000
+
+local TARGET_PLAYER = "otmoonbloom1"
+local MIN_DISTANCE = 20
 
 --------------------------------------------------
 -- VARIABLES
@@ -28,11 +31,13 @@ local Processing = {}
 
 local function GetSheckles()
 	local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+
 	if not leaderstats then
 		return 0
 	end
 
 	local sheckles = leaderstats:FindFirstChild("Sheckles")
+
 	if not sheckles or not sheckles:IsA("IntValue") then
 		return 0
 	end
@@ -40,112 +45,297 @@ local function GetSheckles()
 	return sheckles.Value
 end
 
+
+--------------------------------------------------
+-- TWEEN
+--------------------------------------------------
+
 local function TweenTo(cf)
-	local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+	local Character = LocalPlayer.Character 
+		or LocalPlayer.CharacterAdded:Wait()
+
 	local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
+
 	local distance = (HumanoidRootPart.Position - cf.Position).Magnitude
+
+	if distance <= 2 then
+		return
+	end
+
+
 	local time = distance / SPEED
+
 
 	local Tween = TweenService:Create(
 		HumanoidRootPart,
-		TweenInfo.new(time, Enum.EasingStyle.Linear),
+		TweenInfo.new(
+			time,
+			Enum.EasingStyle.Linear
+		),
 		{
 			CFrame = cf
 		}
 	)
 
+
 	Tween:Play()
 	Tween.Completed:Wait()
+
 end
 
+
+--------------------------------------------------
+-- CHECK TARGET PLAYER
+--------------------------------------------------
+
+local function CheckTargetPlayer()
+
+	local Target = Players:FindFirstChild(TARGET_PLAYER)
+
+	if not Target then
+		return
+	end
+
+
+	local TargetChar = Target.Character
+
+	if not TargetChar then
+		return
+	end
+
+
+	local TargetHRP = TargetChar:FindFirstChild("HumanoidRootPart")
+
+	if not TargetHRP then
+		return
+	end
+
+
+
+	local Character = LocalPlayer.Character 
+		or LocalPlayer.CharacterAdded:Wait()
+
+	local MyHRP = Character:WaitForChild("HumanoidRootPart")
+
+
+	local Distance = (
+		MyHRP.Position - TargetHRP.Position
+	).Magnitude
+
+
+
+	if Distance > MIN_DISTANCE then
+
+		print(
+			"Tween ke",
+			TARGET_PLAYER,
+			"Distance:",
+			math.floor(Distance)
+		)
+
+
+		TweenTo(
+			TargetHRP.CFrame 
+			* CFrame.new(0,3,0)
+		)
+
+	end
+
+end
+
+
+
+--------------------------------------------------
+-- FIND DROP ITEM
+--------------------------------------------------
+
 local function GetNextItem()
+
 	for _, Model in ipairs(DropFolder:GetChildren()) do
-		if Model:IsA("Model") and not Processing[Model] then
+
+		if Model:IsA("Model") 
+			and not Processing[Model] then
+
+
 			local Anchor = Model:FindFirstChild("PromptAnchor")
 
-			if Anchor and Anchor:IsA("BasePart") then
+
+			if Anchor 
+				and Anchor:IsA("BasePart") then
+
+
 				local Prompt = Anchor:FindFirstChild("PickupPrompt")
 
-				if Prompt and Prompt:IsA("ProximityPrompt") then
+
+				if Prompt 
+					and Prompt:IsA("ProximityPrompt") then
+
+
 					return Model
+
 				end
 			end
 		end
 	end
 
+
 	return nil
+
 end
 
+
+
+--------------------------------------------------
+-- COLLECT ITEM
+--------------------------------------------------
+
 local function CollectItem(Model)
-	if not Model or not Model.Parent then
+
+	if not Model 
+		or not Model.Parent then
 		return
 	end
+
 
 	Processing[Model] = true
 
-	local Anchor = Model:FindFirstChild("PromptAnchor")
-	local Prompt = Anchor and Anchor:FindFirstChild("PickupPrompt")
 
-	if not Anchor or not Prompt then
+
+	local Anchor = Model:FindFirstChild("PromptAnchor")
+
+	local Prompt = Anchor 
+		and Anchor:FindFirstChild("PickupPrompt")
+
+
+
+	if not Anchor 
+		or not Prompt then
+
 		Processing[Model] = nil
 		return
+
 	end
 
-	TweenTo(Anchor.CFrame + Vector3.new(0, 3, 0))
 
-	while Model.Parent and Prompt.Parent do
-		-- Stop jika uang sudah melebihi batas
+
+	-- Pergi ke drop
+	TweenTo(
+		Anchor.CFrame 
+		* CFrame.new(0,3,0)
+	)
+
+
+
+	while Model.Parent 
+		and Prompt.Parent do
+
+
 		if GetSheckles() > MAX_SHECKLES then
 			break
 		end
 
+
+
 		pcall(function()
+
 			fireproximityprompt(Prompt)
+
 		end)
 
+
+
 		task.wait(0.05)
+
 	end
 
+
+
 	Processing[Model] = nil
+
 end
 
+
+
+--------------------------------------------------
+-- MAIN LOOP
+--------------------------------------------------
+
 local function CollectLoop()
+
+
 	if Busy then
 		return
 	end
 
-	-- Jangan collect jika sudah > MAX_SHECKLES
+
+
 	if GetSheckles() > MAX_SHECKLES then
 		return
 	end
 
+
+
 	Busy = true
 
+
+
+	-- CHECK PLAYER DULU
+	CheckTargetPlayer()
+
+
+
 	while true do
+
+
 		if GetSheckles() > MAX_SHECKLES then
 			break
 		end
 
+
+
 		local Model = GetNextItem()
+
+
 
 		if not Model then
 			break
 		end
 
+
+
 		CollectItem(Model)
+
+
+
 	end
 
+
+
 	Busy = false
+
 end
+
+
 
 --------------------------------------------------
 -- AUTO COLLECT
 --------------------------------------------------
 
 task.spawn(function()
+
 	while true do
-		pcall(CollectLoop)
+
+		pcall(function()
+
+			CollectLoop()
+
+		end)
+
+
 		task.wait(CHECK_DELAY)
+
 	end
+
 end)
