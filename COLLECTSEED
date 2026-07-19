@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
 local Map = workspace:WaitForChild("Map")
-local DropFolder = Map:WaitForChild("SeedPackSpawnServerLocations") -- Ganti jika folder berbeda
+local DropFolder = Map:WaitForChild("SeedPackSpawnServerLocations")
 
 --------------------------------------------------
 -- CONFIG
@@ -13,6 +13,7 @@ local DropFolder = Map:WaitForChild("SeedPackSpawnServerLocations") -- Ganti jik
 
 local SPEED = 30
 local CHECK_DELAY = 2
+local MAX_SHECKLES = 1000000000 -- Jangan collect jika lebih dari ini
 
 --------------------------------------------------
 -- VARIABLES
@@ -24,6 +25,20 @@ local Processing = {}
 --------------------------------------------------
 -- FUNCTIONS
 --------------------------------------------------
+
+local function GetSheckles()
+    local Leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+    if not Leaderstats then
+        return 0
+    end
+
+    local Sheckles = Leaderstats:FindFirstChild("Sheckles")
+    if not Sheckles then
+        return 0
+    end
+
+    return Sheckles.Value
+end
 
 local function TweenTo(cf)
     local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -83,9 +98,19 @@ local function CollectLoop()
         return
     end
 
+    -- Jangan collect jika Sheckles sudah melebihi batas
+    if GetSheckles() > MAX_SHECKLES then
+        return
+    end
+
     Busy = true
 
     while true do
+        -- Hentikan jika selama collect Sheckles sudah melewati batas
+        if GetSheckles() > MAX_SHECKLES then
+            break
+        end
+
         local Part = GetNextSeed()
 
         if not Part then
