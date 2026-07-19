@@ -10,16 +10,30 @@ local LocalPlayer = Players.LocalPlayer
 --------------------------------------------------
 
 local VirtualUser = game:GetService("VirtualUser")
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
 
 LocalPlayer.Idled:Connect(function()
+    pcall(function()
+        VirtualUser:CaptureController()
 
-	print("Anti AFK Triggered")
+        local Camera = workspace.CurrentCamera
 
-	VirtualUser:CaptureController()
-	VirtualUser:ClickButton2(
-		Vector2.new()
-	)
+        VirtualUser:Button2Down(
+            Vector2.new(0, 0),
+            Camera.CFrame
+        )
 
+        task.wait(1)
+
+        VirtualUser:Button2Up(
+            Vector2.new(0, 0),
+            Camera.CFrame
+        )
+
+        print("Anti AFK")
+    end)
 end)
 
 local DropFolder = workspace:WaitForChild("DroppedItems")
