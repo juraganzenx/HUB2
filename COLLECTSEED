@@ -6,23 +6,25 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
 --------------------------------------------------
--- ANTI AFK
+-- ANTI AFK (GESER KAMERA)
 --------------------------------------------------
 
-local VirtualUser = game:GetService("VirtualUser")
-
 task.spawn(function()
-    while task.wait(60) do
+    while true do
+        task.wait(60)
+
         pcall(function()
-            VirtualUser:CaptureController()
+            local cam = workspace.CurrentCamera
 
-            local Camera = workspace.CurrentCamera
+            if cam then
+                local old = cam.CFrame
 
-            VirtualUser:Button2Down(Vector2.new(0,0), Camera.CFrame)
-            task.wait(0.1)
-            VirtualUser:Button2Up(Vector2.new(0,0), Camera.CFrame)
+                cam.CFrame = old * CFrame.Angles(0, math.rad(2), 0)
+                task.wait(0.1)
+                cam.CFrame = old
 
-            print("Anti AFK Ping")
+                print("Anti AFK Camera")
+            end
         end)
     end
 end)
