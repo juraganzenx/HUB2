@@ -1,42 +1,8 @@
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
+while task.wait(10) do
+    local Character = game.Players.LocalPlayer.Character
+    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
 
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-
--- GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FPSGui"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
-
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 120, 0, 40)
-Frame.Position = UDim2.new(0, 10, 0, 10)
-Frame.BackgroundTransparency = 0.3
-Frame.Parent = ScreenGui
-
-local TextLabel = Instance.new("TextLabel")
-TextLabel.Size = UDim2.new(1, 0, 1, 0)
-TextLabel.BackgroundTransparency = 1
-TextLabel.TextScaled = true
-TextLabel.Font = Enum.Font.SourceSansBold
-TextLabel.TextColor3 = Color3.new(1,1,1)
-TextLabel.Parent = Frame
-
--- FPS Counter
-local frames = 0
-local lastUpdate = tick()
-
-RunService.RenderStepped:Connect(function()
-    frames += 1
-
-    local now = tick()
-    if now - lastUpdate >= 1 then
-        local fps = math.floor(frames / (now - lastUpdate))
-        TextLabel.Text = "FPS: " .. fps
-
-        frames = 0
-        lastUpdate = now
+    if Humanoid and Humanoid.Health > 0 then
+        Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
     end
-end)
+end
