@@ -10,9 +10,7 @@ local LocalPlayer = Players.LocalPlayer
 --------------------------------------------------
 
 local VirtualUser = game:GetService("VirtualUser")
-local Players = game:GetService("Players")
 
-local LocalPlayer = Players.LocalPlayer
 
 LocalPlayer.Idled:Connect(function()
     pcall(function()
