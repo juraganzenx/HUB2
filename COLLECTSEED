@@ -1,11 +1,11 @@
---COLLECT SEED V2
+--// COLLECT DROPPED ITEMS V3
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 
-local Map = workspace:WaitForChild("Map")
-local DropFolder = Map:WaitForChild("SeedPackSpawnServerLocations")
+local DropFolder = workspace:WaitForChild("DroppedItems")
 
 --------------------------------------------------
 -- CONFIG
@@ -13,7 +13,7 @@ local DropFolder = Map:WaitForChild("SeedPackSpawnServerLocations")
 
 local SPEED = 30
 local CHECK_DELAY = 2
-local MAX_SHECKLES = 1000000000 -- Jangan collect jika lebih dari ini
+local MAX_SHECKLES = 100000000000 -- Stop collect jika > 1B
 
 --------------------------------------------------
 -- VARIABLES
@@ -27,109 +27,125 @@ local Processing = {}
 --------------------------------------------------
 
 local function GetSheckles()
-    local Leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-    if not Leaderstats then
-        return 0
-    end
+	local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+	if not leaderstats then
+		return 0
+	end
 
-    local Sheckles = Leaderstats:FindFirstChild("Sheckles")
-    if not Sheckles then
-        return 0
-    end
+	local sheckles = leaderstats:FindFirstChild("Sheckles")
+	if not sheckles or not sheckles:IsA("IntValue") then
+		return 0
+	end
 
-    return Sheckles.Value
+	return sheckles.Value
 end
 
 local function TweenTo(cf)
-    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+	local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
-    local distance = (HumanoidRootPart.Position - cf.Position).Magnitude
-    local time = distance / SPEED
+	local distance = (HumanoidRootPart.Position - cf.Position).Magnitude
+	local time = distance / SPEED
 
-    local Tween = TweenService:Create(
-        HumanoidRootPart,
-        TweenInfo.new(time, Enum.EasingStyle.Linear),
-        {
-            CFrame = cf
-        }
-    )
+	local Tween = TweenService:Create(
+		HumanoidRootPart,
+		TweenInfo.new(time, Enum.EasingStyle.Linear),
+		{
+			CFrame = cf
+		}
+	)
 
-    Tween:Play()
-    Tween.Completed:Wait()
+	Tween:Play()
+	Tween.Completed:Wait()
 end
 
-local function GetNextSeed()
-    for _, Part in ipairs(DropFolder:GetChildren()) do
-        if Part:IsA("BasePart") and not Processing[Part] then
-            return Part
-        end
-    end
+local function GetNextItem()
+	for _, Model in ipairs(DropFolder:GetChildren()) do
+		if Model:IsA("Model") and not Processing[Model] then
+			local Anchor = Model:FindFirstChild("PromptAnchor")
 
-    return nil
+			if Anchor and Anchor:IsA("BasePart") then
+				local Prompt = Anchor:FindFirstChild("PickupPrompt")
+
+				if Prompt and Prompt:IsA("ProximityPrompt") then
+					return Model
+				end
+			end
+		end
+	end
+
+	return nil
 end
 
-local function CollectSeed(Part)
-    if not Part or not Part.Parent then
-        return
-    end
+local function CollectItem(Model)
+	if not Model or not Model.Parent then
+		return
+	end
 
-    Processing[Part] = true
+	Processing[Model] = true
 
-    TweenTo(Part.CFrame + Vector3.new(0, 3, 0))
+	local Anchor = Model:FindFirstChild("PromptAnchor")
+	local Prompt = Anchor and Anchor:FindFirstChild("PickupPrompt")
 
-    local Prompt = Part:FindFirstChildWhichIsA("ProximityPrompt")
+	if not Anchor or not Prompt then
+		Processing[Model] = nil
+		return
+	end
 
-    if Prompt then
-        while Part.Parent and Prompt.Parent do
-            pcall(function()
-                fireproximityprompt(Prompt)
-            end)
+	TweenTo(Anchor.CFrame + Vector3.new(0, 3, 0))
 
-            task.wait(0.05)
-        end
-    end
+	while Model.Parent and Prompt.Parent do
+		-- Stop jika uang sudah melebihi batas
+		if GetSheckles() > MAX_SHECKLES then
+			break
+		end
 
-    Processing[Part] = nil
+		pcall(function()
+			fireproximityprompt(Prompt)
+		end)
+
+		task.wait(0.05)
+	end
+
+	Processing[Model] = nil
 end
 
 local function CollectLoop()
-    if Busy then
-        return
-    end
+	if Busy then
+		return
+	end
 
-    -- Jangan collect jika Sheckles sudah melebihi batas
-    if GetSheckles() > MAX_SHECKLES then
-        return
-    end
+	-- Jangan collect jika sudah > MAX_SHECKLES
+	if GetSheckles() > MAX_SHECKLES then
+		return
+	end
 
-    Busy = true
+	Busy = true
 
-    while true do
-        -- Hentikan jika selama collect Sheckles sudah melewati batas
-        if GetSheckles() > MAX_SHECKLES then
-            break
-        end
+	while true do
+		if GetSheckles() > MAX_SHECKLES then
+			break
+		end
 
-        local Part = GetNextSeed()
+		local Model = GetNextItem()
 
-        if not Part then
-            break
-        end
+		if not Model then
+			break
+		end
 
-        CollectSeed(Part)
-    end
+		CollectItem(Model)
+	end
 
-    Busy = false
+	Busy = false
 end
 
 --------------------------------------------------
--- MAIN LOOP
+-- AUTO COLLECT
 --------------------------------------------------
 
 task.spawn(function()
-    while true do
-        CollectLoop()
-        task.wait(CHECK_DELAY)
-    end
+	while true do
+		pcall(CollectLoop)
+		task.wait(CHECK_DELAY)
+	end
 end)
