@@ -1,20 +1,8 @@
-local GuiService = game:GetService("GuiService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+while task.wait(20) do
+    local Character = game.Players.LocalPlayer.Character
+    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
 
--- Tunggu 5 detik
-task.wait(5)
-
--- Aktifkan UI Navigation
-GuiService.GuiNavigationEnabled = true
-
-task.wait(0.2)
-
--- Tekan Enter
-VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-task.wait(0.05)
-VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-
-task.wait(0.2)
-
--- Matikan UI Navigation
-GuiService.GuiNavigationEnabled = false
+    if Humanoid and Humanoid.Health > 0 then
+        Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end
