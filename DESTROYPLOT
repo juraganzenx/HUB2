@@ -1,8 +1,51 @@
---DESTROY PLOT BISA HARVEST V2
+--DESTROY PLOT BISA HARVEST V4
+
 local Gardens = workspace:WaitForChild("Gardens")
+local DroppedItems = workspace:WaitForChild("DroppedItems")
+
+
+--------------------------------------------------
+-- DESTROY DROPPED ITEMS VISUAL
+--------------------------------------------------
+
+local function DestroyDroppedVisual(Item)
+    local Visual = Item:FindFirstChild("Visual")
+
+    if Visual and Visual:IsA("Model") then
+        Visual:Destroy()
+    end
+end
+
+
+for _, Item in ipairs(DroppedItems:GetChildren()) do
+    DestroyDroppedVisual(Item)
+end
+
+
+DroppedItems.ChildAdded:Connect(function(Item)
+    task.wait()
+
+    if Item.Parent then
+        DestroyDroppedVisual(Item)
+    end
+
+    Item.ChildAdded:Connect(function(Child)
+        if Child.Name == "Visual" and Child:IsA("Model") then
+            Child:Destroy()
+        end
+    end)
+end)
+
+
+
+--------------------------------------------------
+-- DESTROY PLOT KECUALI HARVESTPART
+--------------------------------------------------
 
 local function ProcessPlot(Plot)
+
     for _, Obj in ipairs(Plot:GetDescendants()) do
+
         if Obj.Name == "HarvestPart" then
             continue
         end
@@ -11,48 +54,73 @@ local function ProcessPlot(Plot)
         local Parent = Obj.Parent
 
         while Parent and Parent ~= Plot do
+
             if Parent.Name == "HarvestPart" then
                 IsInsideHarvestPart = true
                 break
             end
+
             Parent = Parent.Parent
         end
+
 
         if not IsInsideHarvestPart and Obj:IsA("BasePart") then
             Obj:Destroy()
         end
     end
 
+
+
     Plot.DescendantAdded:Connect(function(Obj)
+
         if Obj.Name == "HarvestPart" then
             return
         end
 
+
         local Parent = Obj.Parent
+
         while Parent and Parent ~= Plot do
+
             if Parent.Name == "HarvestPart" then
                 return
             end
+
             Parent = Parent.Parent
         end
 
+
         if Obj:IsA("BasePart") and Obj.Parent then
+
             task.defer(function()
+
                 if Obj.Parent then
                     Obj:Destroy()
                 end
+
             end)
+
         end
     end)
 end
+
+
+
+--------------------------------------------------
+-- INIT PLOT
+--------------------------------------------------
 
 for _, Plot in ipairs(Gardens:GetChildren()) do
     ProcessPlot(Plot)
 end
 
+
 Gardens.ChildAdded:Connect(function(Plot)
-    task.wait(1) -- tunggu plot selesai load
+
+    task.wait(1)
+
     if Plot.Parent then
         ProcessPlot(Plot)
     end
+
 end)
