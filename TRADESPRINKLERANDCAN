@@ -41,7 +41,7 @@ end
 
 while task.wait(INTERVAL) do
 
-	if HasItem("AAASuper Sprinkler") then
+	if HasItem("Super Sprinkler") then
 		pcall(function()
 			Networking.Mailbox.SendBatch:Fire(
 				UserId,
@@ -56,6 +56,41 @@ while task.wait(INTERVAL) do
 			)
 		end)
 	end
+
+
+	if HasItem("Legendary Sprinkler") then
+		pcall(function()
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Sprinklers",
+						ItemKey = "Legendary Sprinkler",
+						Count = 2
+					}
+				},
+				"Supersprinkler"
+			)
+		end)
+	end
+
+
+		if HasItem("Star Fruit") then
+		pcall(function()
+			Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				{
+					{
+						Category = "Seeds",
+						ItemKey = "Star Fruit",
+						Count = 1
+					}
+				},
+				"StarFruit"
+			)
+		end)
+	end
+
 
 	if HasItem("Super Watering Can") then
 		pcall(function()
@@ -74,106 +109,7 @@ while task.wait(INTERVAL) do
 	end
 
 
-	if HasItem("Venom Spitter") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Venom Spitter",
-						Count = 1
-					}
-				},
-				"VenomSpitter"
-			)
-		end)
-	end
 
-
-	if HasItem("AAAAAMega") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Mega",
-						Count = 10
-					}
-				},
-				"Mega"
-			)
-		end)
-	end
-
-	if HasItem("Dragon's Breath") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Dragon's Breath",
-						Count = 1
-					}
-				},
-				"Dragon's Breath"
-			)
-		end)
-	end
-
-	
-
-	if HasItem("Venus Fly Trap") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Venus Fly Trap",
-						Count = 1
-					}
-				},
-				"Venus Fly Trap"
-			)
-		end)
-	end
-
-	
-
-	if HasItem("Moon Bloom") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Moon Bloom",
-						Count = 1
-					}
-				},
-				"Moon Bloom"
-			)
-		end)
-	end
-
-	if HasItem("Hypno Bloom") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Hypno Bloom",
-						Count = 1
-					}
-				},
-				"Hypno Bloom"
-			)
-		end)
-	end
 
 	
 
