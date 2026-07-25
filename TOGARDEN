@@ -1,117 +1,20 @@
---// Services
-local Players = game:GetService("Players")
-local GuiService = game:GetService("GuiService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+--CLAIM ALL MAILBOX
+local ReceiveFrame = game.Players.LocalPlayer.PlayerGui.MailboxUI.Frame.RecieveFrame
 
---// Player
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+for _, Gift in ipairs(ReceiveFrame:GetChildren()) do
+    local ClaimButton = Gift:FindFirstChild("Claim", true)
 
---------------------------------------------------
--- GUI
---------------------------------------------------
+    if ClaimButton and ClaimButton:IsA("TextButton") then
+        print("Claiming:", Gift.Name)
 
-local Enabled = true -- Default ON
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TeleportToggleGUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
-
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(0, 140, 0, 40)
-ToggleButton.Position = UDim2.new(0, 60, 0.5, -20)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-ToggleButton.TextColor3 = Color3.new(1,1,1)
-ToggleButton.TextScaled = true
-ToggleButton.Font = Enum.Font.SourceSansBold
-ToggleButton.Text = "Teleport : ON"
-ToggleButton.Parent = ScreenGui
-
-ToggleButton.MouseButton1Click:Connect(function()
-    Enabled = not Enabled
-
-    if Enabled then
-        ToggleButton.Text = "Teleport : ON"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-    else
-        ToggleButton.Text = "Teleport : OFF"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    end
-end)
-
---------------------------------------------------
--- FUNCTIONS
---------------------------------------------------
-
-local function ClickSeed()
-    local success, err = pcall(function()
-        local button = PlayerGui
-            .TeleportButtons
-            .TeleportButtons
-            .SeedsButton
-
-        GuiService.GuiNavigationEnabled = true
-        GuiService.SelectedObject = button
-
-        task.wait(0.1)
-
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-        task.wait()
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-
-        task.wait(0.1)
-
-        GuiService.SelectedObject = nil
-        GuiService.GuiNavigationEnabled = false
-    end)
-
-    if not success then
-        warn("ClickSeed Error:", err)
-    end
-end
-
-local function ClickGarden()
-    local success, err = pcall(function()
-        local button = PlayerGui
-            .TeleportButtons
-            .TeleportButtons
-            .GardenButton
-
-        GuiService.GuiNavigationEnabled = true
-        GuiService.SelectedObject = button
-
-        task.wait(0.1)
-
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-        task.wait()
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-
-        task.wait(0.1)
-
-        GuiService.SelectedObject = nil
-        GuiService.GuiNavigationEnabled = false
-    end)
-
-    if not success then
-        warn("ClickGarden Error:", err)
-    end
-end
-
---------------------------------------------------
--- LOOP
---------------------------------------------------
-
-task.spawn(function()
-    while true do
-        if Enabled then
-            ClickSeed()
-            task.wait(2)
-
-            ClickGarden()
-            task.wait(30)
+        if firesignal then
+            firesignal(ClaimButton.Activated)
         else
-            task.wait(1)
+            for _, conn in ipairs(getconnections(ClaimButton.Activated)) do
+                conn:Fire()
+            end
         end
+
+        task.wait(10)
     end
-end)
+end
