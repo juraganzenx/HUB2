@@ -1,5 +1,9 @@
---CLAIM ALL MAILBOX
-local ReceiveFrame = game.Players.LocalPlayer.PlayerGui.MailboxUI.Frame.RecieveFrame
+-- CLAIM ALL MAILBOX
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local ReceiveFrame = LocalPlayer.PlayerGui.MailboxUI.Frame.RecieveFrame
 
 for _, Gift in ipairs(ReceiveFrame:GetChildren()) do
     local ClaimButton = Gift:FindFirstChild("Claim", true)
@@ -8,9 +12,9 @@ for _, Gift in ipairs(ReceiveFrame:GetChildren()) do
         print("Claiming:", Gift.Name)
 
         if firesignal then
-            firesignal(ClaimButton.Activated)
+            firesignal(ClaimButton.MouseButton1Click)
         else
-            for _, conn in ipairs(getconnections(ClaimButton.Activated)) do
+            for _, conn in ipairs(getconnections(ClaimButton.MouseButton1Click)) do
                 conn:Fire()
             end
         end
