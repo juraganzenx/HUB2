@@ -39,69 +39,96 @@ end)
 
 
 --------------------------------------------------
--- DESTROY PLOT KECUALI HARVESTPART
+-- DESTROY PLOT KECUALI HARVESTPART DAN SIGNS
 --------------------------------------------------
+
+local function IsInsideProtectedFolder(Obj, Plot)
+
+    local Parent = Obj.Parent
+
+    while Parent and Parent ~= Plot do
+
+        -- Jangan destroy apapun di dalam HarvestPart
+        if Parent.Name == "HarvestPart" then
+            return true
+        end
+
+        -- Jangan destroy apapun di dalam Signs
+        if Parent.Name == "Signs" then
+            return true
+        end
+
+        Parent = Parent.Parent
+    end
+
+    return false
+end
+
+
 
 local function ProcessPlot(Plot)
 
+    --------------------------------------------------
+    -- DESTROY OBJECT YANG SUDAH ADA
+    --------------------------------------------------
+
     for _, Obj in ipairs(Plot:GetDescendants()) do
 
-        if Obj.Name == "HarvestPart" then
+        -- Folder/Model utama tidak dihapus
+        if Obj.Name == "HarvestPart" or Obj.Name == "Signs" then
             continue
         end
 
-        local IsInsideHarvestPart = false
-        local Parent = Obj.Parent
 
-        while Parent and Parent ~= Plot do
-
-            if Parent.Name == "HarvestPart" then
-                IsInsideHarvestPart = true
-                break
-            end
-
-            Parent = Parent.Parent
+        -- Jika berada di dalam HarvestPart atau Signs
+        if IsInsideProtectedFolder(Obj, Plot) then
+            continue
         end
 
 
-        if not IsInsideHarvestPart and Obj:IsA("BasePart") then
+        -- Hanya destroy BasePart
+        if Obj:IsA("BasePart") then
             Obj:Destroy()
         end
     end
 
 
 
+    --------------------------------------------------
+    -- DESTROY OBJECT BARU YANG MASUK
+    --------------------------------------------------
+
     Plot.DescendantAdded:Connect(function(Obj)
 
-        if Obj.Name == "HarvestPart" then
+        -- Jangan proses HarvestPart dan Signs
+        if Obj.Name == "HarvestPart" or Obj.Name == "Signs" then
             return
         end
 
 
-        local Parent = Obj.Parent
+        -- Tunggu sebentar agar Parent hierarchy lengkap
+        task.defer(function()
 
-        while Parent and Parent ~= Plot do
-
-            if Parent.Name == "HarvestPart" then
+            if not Obj.Parent then
                 return
             end
 
-            Parent = Parent.Parent
-        end
+
+            -- Cek apakah berada di area yang dilindungi
+            if IsInsideProtectedFolder(Obj, Plot) then
+                return
+            end
 
 
-        if Obj:IsA("BasePart") and Obj.Parent then
+            -- Destroy BasePart yang tidak dilindungi
+            if Obj:IsA("BasePart") and Obj.Parent then
+                Obj:Destroy()
+            end
 
-            task.defer(function()
+        end)
 
-                if Obj.Parent then
-                    Obj:Destroy()
-                end
-
-            end)
-
-        end
     end)
+
 end
 
 
@@ -114,6 +141,11 @@ for _, Plot in ipairs(Gardens:GetChildren()) do
     ProcessPlot(Plot)
 end
 
+
+
+--------------------------------------------------
+-- PLOT BARU
+--------------------------------------------------
 
 Gardens.ChildAdded:Connect(function(Plot)
 
