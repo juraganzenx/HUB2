@@ -5,17 +5,17 @@
 --
 -- LOGIC:
 -- 1. SCAN SEMUA WILD PET
--- 2. CEK HARGA PET DARI BuyPrompt.ObjectText
+-- 2. CEK HARGA PET
 -- 3. HARGA >= 12,000,000 -> SKIP
--- 4. HARGA < 12,000,000 -> KEJAR PET
--- 5. TWEEN TERUS MENGIKUTI RootPart PET
--- 6. JIKA SUDAH DEKAT -> FIRE BuyPrompt
--- 7. SETELAH PROMPT DIPANGGIL -> STOP MENGIKUTI PET
--- 8. LANJUT KE PET BERIKUTNYA
--- 9. DROP SEMUA PET
--- 10. RACCOON DI BACKPACK TIDAK DI-DROP
--- 11. JIKA TIDAK ADA WILD PET -> TWEEN KE CHARLOTTE
--- 12. ULANGI TERUS
+-- 4. HARGA < 12,000,000 -> TWEEN KE PET SPEED 100
+-- 5. IKUTI POSISI PET TANPA WELD
+-- 6. FIRE BUY PROMPT SAMPAI BERHASIL
+-- 7. LANJUT PET BERIKUTNYA
+-- 8. DROP SEMUA PET
+-- 9. RACCOON DI BACKPACK TIDAK DI-DROP
+-- 10. JIKA TIDAK ADA PET
+--     -> TWEEN KE CHARLOTTE
+-- 11. ULANGI TERUS
 --
 -- SERVER HOP DIHAPUS
 --==================================================
@@ -34,23 +34,15 @@ local Networking = require(
 -- CONFIG
 --==================================================
 
--- Kecepatan Tween
+-- Kecepatan Tween ke Pet
 local TWEEN_SPEED = 100
 
--- Interval Main Loop
-local CHECK_DELAY = 2
-
--- Jarak dianggap sudah sampai ke pet
-local PET_REACH_DISTANCE = 5
-
--- Seberapa sering target RootPart diperbarui
-local TWEEN_UPDATE_DELAY = 0.1
-
--- Harga maksimal
---
--- Jika harga >= 12,000,000
--- maka pet tidak akan dibeli
+-- Batas harga pet
+-- Harga >= 12,000,000 akan di-SKIP
 local MAX_PET_PRICE = 12000000
+
+-- Interval pengecekan
+local CHECK_DELAY = 2
 
 -- Timeout Equip Pet
 local EQUIP_TIMEOUT = 5
@@ -58,17 +50,20 @@ local EQUIP_TIMEOUT = 5
 -- Timeout Drop Pet
 local DROP_TIMEOUT = 5
 
--- Delay setelah prompt dipanggil
+-- Delay antar percobaan BuyPrompt
+local TAKE_RETRY_DELAY = 0.2
+
+-- Delay setelah pet berhasil diambil
 local AFTER_TAKE_DELAY = 0.2
 
--- Delay setelah proses pet
+-- Delay setelah selesai memproses satu pet
 local AFTER_PROCESS_DELAY = 0.5
 
--- Delay setelah drop pet
+-- Delay setelah Drop satu pet
 local AFTER_DROP_DELAY = 0.5
 
 --==================================================
--- PATH WILD PET
+-- PATH
 --==================================================
 
 local WildPetSpawns = workspace
@@ -113,13 +108,17 @@ end
 --==================================================
 -- GET PET PRICE
 --
--- Contoh:
+-- Contoh ObjectText:
 --
--- ObjectText:
 -- ¢50,000
+-- ¢1,000,000
+-- ¢12,000,000
 --
--- Hasil:
+-- HASIL:
+--
 -- 50000
+-- 1000000
+-- 12000000
 --==================================================
 
 local function GetPetPrice(BuyPrompt)
@@ -140,15 +139,7 @@ local function GetPetPrice(BuyPrompt)
     end
 
     --==================================================
-    -- AMBIL SEMUA ANGKA
-    --
-    -- ¢50,000
-    -- menjadi
-    -- 50000
-    --
-    -- ¢12,000,000
-    -- menjadi
-    -- 12000000
+    -- AMBIL SEMUA ANGKA DARI OBJECTTEXT
     --==================================================
 
     local PriceText =
@@ -173,7 +164,7 @@ local function GetPetPrice(BuyPrompt)
 end
 
 --==================================================
--- ADD PET KE BATCH
+-- ADD PET TO BATCH
 --==================================================
 
 local function AddToBatch(Pet)
@@ -186,7 +177,7 @@ local function AddToBatch(Pet)
     end
 
     --==================================================
-    -- CEGAH DUPLIKAT
+    -- CEGAH PET YANG SAMA MASUK BATCH 2X
     --==================================================
 
     for _, ExistingPet in ipairs(
@@ -202,7 +193,7 @@ local function AddToBatch(Pet)
     end
 
     --==================================================
-    -- TAMBAHKAN KE BATCH
+    -- MASUKKAN PET KE BATCH
     --==================================================
 
     table.insert(
@@ -213,7 +204,7 @@ local function AddToBatch(Pet)
 end
 
 --==================================================
--- SCAN SEMUA PET
+-- SCAN SEMUA PET DI WILD PET SPAWNS
 --==================================================
 
 local function ScanAllPets()
@@ -233,23 +224,15 @@ end
 --==================================================
 -- TAKE / BUY PET
 --
--- TWEEN AKAN TERUS MENGIKUTI RootPart
---
--- Jika pet bergerak:
--- posisi target diperbarui
---
--- Jika sudah dekat:
--- fireproximityprompt()
---
--- Setelah prompt:
--- berhenti mengikuti pet
+-- TWEEN SPEED 100
+-- TANPA WELD
+-- TWEEN SEKALI KE PET
+-- SETELAH SAMPAI:
+-- IKUTI POSISI ROOTPART PET
+-- FIRE BUY PROMPT SAMPAI PET HILANG
 --==================================================
 
 local function TakePet(Pet)
-
-    --==================================================
-    -- CEK PET
-    --==================================================
 
     if not Pet
         or not Pet.Parent then
@@ -259,7 +242,7 @@ local function TakePet(Pet)
     end
 
     --==================================================
-    -- GET ROOT PART
+    -- GET ROOT PART PET
     --==================================================
 
     local RootPart =
@@ -292,7 +275,7 @@ local function TakePet(Pet)
     end
 
     --==================================================
-    -- CEK HARGA
+    -- CEK HARGA PET
     --==================================================
 
     local PetPrice =
@@ -301,8 +284,8 @@ local function TakePet(Pet)
         )
 
     --==================================================
-    -- GAGAL BACA HARGA
-    -- SKIP
+    -- JIKA GAGAL MEMBACA HARGA
+    -- SKIP PET
     --==================================================
 
     if not PetPrice then
@@ -312,9 +295,7 @@ local function TakePet(Pet)
     end
 
     --==================================================
-    -- JANGAN BELI JIKA:
-    --
-    -- Harga >= 12,000,000
+    -- JANGAN BELI JIKA HARGA >= 12 JUTA
     --==================================================
 
     if PetPrice >= MAX_PET_PRICE then
@@ -331,124 +312,130 @@ local function TakePet(Pet)
         GetRoot()
 
     --==================================================
-    -- LOOP KEJAR PET
+    -- HITUNG JARAK
     --==================================================
 
-    while Pet.Parent
-        and RootPart.Parent
-        and BuyPrompt.Parent do
+    local Distance = (
+        HRP.Position
+        - RootPart.Position
+    ).Magnitude
 
-        --==================================================
-        -- HITUNG JARAK TERBARU
-        --==================================================
+    --==================================================
+    -- HITUNG DURASI TWEEN
+    -- SPEED 100
+    --==================================================
 
-        local Distance = (
-            HRP.Position
-            - RootPart.Position
-        ).Magnitude
+    local Duration =
+        Distance / TWEEN_SPEED
 
-        --==================================================
-        -- SUDAH DEKAT PET
-        --==================================================
+    --==================================================
+    -- TWEEN KE PET
+    --==================================================
 
-        if Distance <= PET_REACH_DISTANCE then
+    local Tween =
+        TweenService:Create(
 
-            break
+            HRP,
 
-        end
+            TweenInfo.new(
+                Duration,
+                Enum.EasingStyle.Linear,
+                Enum.EasingDirection.Out
+            ),
 
-        --==================================================
-        -- HITUNG DURASI TWEEN
-        --
-        -- SPEED = 100
-        --==================================================
+            {
+                CFrame =
+                    RootPart.CFrame
+            }
 
-        local Duration =
-            Distance / TWEEN_SPEED
-
-        --==================================================
-        -- BUAT TWEEN KE POSISI TERBARU
-        --==================================================
-
-        local Tween =
-            TweenService:Create(
-
-                HRP,
-
-                TweenInfo.new(
-                    math.max(
-                        Duration,
-                        0.05
-                    ),
-
-                    Enum.EasingStyle.Linear,
-
-                    Enum.EasingDirection.Out
-                ),
-
-                {
-                    CFrame =
-                        RootPart.CFrame
-                }
-
-            )
-
-        --==================================================
-        -- PLAY TWEEN
-        --==================================================
-
-        Tween:Play()
-
-        --==================================================
-        -- TUNGGU SEBENTAR
-        --
-        -- Setelah 0.1 detik:
-        -- cek posisi pet lagi
-        --==================================================
-
-        task.wait(
-            TWEEN_UPDATE_DELAY
         )
 
-        --==================================================
-        -- CANCEL TWEEN LAMA
-        --
-        -- Agar target bisa diperbarui
-        --==================================================
+    Tween:Play()
 
-        if Tween.PlaybackState
-            == Enum.PlaybackState.Playing then
+    Tween.Completed:Wait()
 
-            Tween:Cancel()
+    --==================================================
+    -- CEK PET MASIH ADA
+    --==================================================
 
-        end
+    if not Pet
+        or not Pet.Parent then
+
+        return true
 
     end
 
     --==================================================
-    -- CEK PET MASIH VALID
+    -- CEK ROOTPART MASIH ADA
     --==================================================
 
-    if not Pet.Parent
-        or not RootPart.Parent
-        or not BuyPrompt.Parent then
+    if not RootPart
+        or not RootPart.Parent then
 
         return false
 
     end
 
     --==================================================
-    -- UPDATE POSISI TERAKHIR
+    -- POSISI AWAL TEPAT KE PET
     --==================================================
 
     HRP.CFrame =
         RootPart.CFrame
 
     --==================================================
-    -- FIRE BUY PROMPT
+    -- TAKE LOOP
+    --
+    -- TIDAK MENGGUNAKAN WELD
+    --
+    -- PLAYER AKAN TERUS MENGIKUTI
+    -- POSISI ROOTPART PET
+    --
+    -- BUY PROMPT DIPANGGIL BERULANG
+    -- SAMPAI PET BERHASIL DIAMBIL
     --==================================================
 
-    local Success =
+    while true do
+
+        --==================================================
+        -- CEK PET SUDAH HILANG
+        --==================================================
+
+        if not Pet
+            or not Pet.Parent then
+
+            break
+
+        end
+
+        --==================================================
+        -- CEK ROOTPART MASIH ADA
+        --==================================================
+
+        if not RootPart
+            or not RootPart.Parent then
+
+            break
+
+        end
+
+        --==================================================
+        -- UPDATE POSISI PLAYER
+        -- MENGIKUTI POSISI PET
+        --==================================================
+
+        if HRP
+            and HRP.Parent then
+
+            HRP.CFrame =
+                RootPart.CFrame
+
+        end
+
+        --==================================================
+        -- FIRE BUY PROMPT
+        --==================================================
+
         pcall(function()
 
             fireproximityprompt(
@@ -457,23 +444,25 @@ local function TakePet(Pet)
 
         end)
 
-    --==================================================
-    -- PROMPT BERHASIL DIPANGGIL
-    --
-    -- STOP MENGIKUTI PET
-    --==================================================
-
-    if Success then
+        --==================================================
+        -- TUNGGU SEBELUM COBA LAGI
+        --==================================================
 
         task.wait(
-            AFTER_TAKE_DELAY
+            TAKE_RETRY_DELAY
         )
-
-        return true
 
     end
 
-    return false
+    --==================================================
+    -- PET SUDAH BERHASIL DIAMBIL
+    --==================================================
+
+    task.wait(
+        AFTER_TAKE_DELAY
+    )
+
+    return true
 
 end
 
@@ -498,7 +487,7 @@ local function ProcessBatch()
     ProcessingBatch = true
 
     --==================================================
-    -- PROSES SATU PER SATU
+    -- PROSES PET SATU PER SATU
     --==================================================
 
     while #Batch > 0 do
@@ -510,14 +499,16 @@ local function ProcessBatch()
             )
 
         --==================================================
-        -- CEK PET MASIH ADA
+        -- CEK PET MASIH VALID
         --==================================================
 
         if Pet
             and Pet.Parent then
 
             --==================================================
-            -- TAKE / SKIP PET
+            -- TWEEN SPEED 100
+            -- IKUTI PET
+            -- TAKE SAMPAI BERHASIL
             --==================================================
 
             TakePet(
@@ -525,7 +516,7 @@ local function ProcessBatch()
             )
 
             --==================================================
-            -- JEDA SEBELUM PET BERIKUTNYA
+            -- DELAY SEBELUM PET BERIKUTNYA
             --==================================================
 
             task.wait(
@@ -542,7 +533,6 @@ end
 
 --==================================================
 -- GET SEMUA PET YANG DIMILIKI
---
 -- BACKPACK + CHARACTER
 --==================================================
 
@@ -589,6 +579,7 @@ local function GetAllOwnedPets()
 
     --==================================================
     -- SCAN CHARACTER
+    -- PET YANG SEDANG EQUIP
     --==================================================
 
     if Character then
@@ -626,7 +617,7 @@ local function EquipPet(Pet)
         GetCharacter()
 
     --==================================================
-    -- SUDAH EQUIP
+    -- SUDAH DI-EQUIP
     --==================================================
 
     if Pet.Parent
@@ -637,7 +628,7 @@ local function EquipPet(Pet)
     end
 
     --==================================================
-    -- PET HARUS DI BACKPACK
+    -- PET HARUS ADA DI BACKPACK
     --==================================================
 
     if Pet.Parent
@@ -663,7 +654,7 @@ local function EquipPet(Pet)
     end
 
     --==================================================
-    -- EQUIP
+    -- EQUIP TOOL
     --==================================================
 
     Humanoid:EquipTool(
@@ -711,7 +702,7 @@ local function DropPet(Pet)
     end
 
     --==================================================
-    -- GET PET ID
+    -- AMBIL PET ID
     --==================================================
 
     local PetId =
@@ -809,14 +800,14 @@ end
 --==================================================
 -- DROP SEMUA PET
 --
--- RACCOON DI BACKPACK:
--- TIDAK DI-DROP
+-- RACCOON YANG ADA DI BACKPACK
+-- TIDAK AKAN DI-DROP
 --==================================================
 
 local function DropAllPets()
 
     --==================================================
-    -- SCAN PET
+    -- SCAN BACKPACK + CHARACTER
     --==================================================
 
     local Pets =
@@ -844,7 +835,7 @@ local function DropAllPets()
             and Pet.Parent then
 
             --==================================================
-            -- GET PET NAME
+            -- GET PET ATTRIBUTE
             --==================================================
 
             local PetName =
@@ -862,11 +853,14 @@ local function DropAllPets()
                     == LocalPlayer.Backpack
 
             --==================================================
-            -- JIKA BUKAN RACCOON DI BACKPACK
-            -- DROP
+            -- SKIP RACCOON DI BACKPACK
             --==================================================
 
-            if not IsRaccoonInBackpack then
+            if IsRaccoonInBackpack then
+
+                -- Jangan drop Raccoon
+
+            else
 
                 DropPet(
                     Pet
@@ -875,6 +869,60 @@ local function DropAllPets()
                 task.wait(
                     AFTER_DROP_DELAY
                 )
+
+            end
+
+        end
+
+    end
+
+    --==================================================
+    -- CEK ULANG PET
+    --==================================================
+
+    task.wait(
+        0.5
+    )
+
+    local RemainingPets =
+        GetAllOwnedPets()
+
+    --==================================================
+    -- DROP ULANG PET YANG TERSISA
+    --
+    -- KECUALI RACCOON DI BACKPACK
+    --==================================================
+
+    if #RemainingPets > 0 then
+
+        for _, Pet in ipairs(
+            RemainingPets
+        ) do
+
+            if Pet
+                and Pet.Parent then
+
+                local PetName =
+                    Pet:GetAttribute(
+                        "Pet"
+                    )
+
+                local IsRaccoonInBackpack =
+                    PetName == "Raccoon"
+                    and Pet.Parent
+                        == LocalPlayer.Backpack
+
+                if not IsRaccoonInBackpack then
+
+                    DropPet(
+                        Pet
+                    )
+
+                    task.wait(
+                        AFTER_DROP_DELAY
+                    )
+
+                end
 
             end
 
@@ -929,7 +977,7 @@ local function TweenToCenterMap()
         )
 
     --==================================================
-    -- GET ROOT CHARLOTTE
+    -- GET HUMANOID ROOT PART
     --==================================================
 
     local CharlotteRoot =
@@ -947,7 +995,7 @@ local function TweenToCenterMap()
     ).Magnitude
 
     --==================================================
-    -- SUDAH DEKAT
+    -- JIKA SUDAH DEKAT
     --==================================================
 
     if Distance <= 2 then
@@ -959,7 +1007,8 @@ local function TweenToCenterMap()
     end
 
     --==================================================
-    -- DURASI TWEEN
+    -- HITUNG DURASI TWEEN
+    -- SPEED 100
     --==================================================
 
     local Duration =
@@ -1019,6 +1068,8 @@ WildPetSpawns.ChildAdded:Connect(
 
 --==================================================
 -- MAIN LOOP
+--
+-- TIDAK ADA SERVER HOP
 --==================================================
 
 while task.wait(
@@ -1036,7 +1087,7 @@ while task.wait(
     -- STEP 2
     -- TAKE SEMUA PET
     --
-    -- TWEEN TERUS MENGIKUTI RootPart
+    -- PET >= 12 JUTA DI-SKIP
     --==================================================
 
     ProcessBatch()
