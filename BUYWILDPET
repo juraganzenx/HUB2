@@ -39,7 +39,7 @@ local TWEEN_SPEED = 100
 
 -- Maksimal harga pet yang boleh dibeli
 -- Harga >= 12,000,000 akan di-SKIP
-local MAX_PET_PRICE = 22000
+local MAX_PET_PRICE = 20000000
 
 -- Interval Main Loop
 local CHECK_DELAY = 2
