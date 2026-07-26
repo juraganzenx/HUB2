@@ -1,3 +1,4 @@
+--BUYWILDPET SEKARANG
 --==================================================
 -- AUTO TAKE ALL PET
 -- DROP ALL PET
@@ -5,17 +6,16 @@
 --
 -- LOGIC:
 -- 1. SCAN SEMUA WILD PET
--- 2. TWEEN KE PET DENGAN SPEED 100
--- 3. SAMPAI KE PET
--- 4. FIRE BUY PROMPT
--- 5. SETELAH PROMPT BERHASIL DIPANGGIL
---    -> LANGSUNG STOP MENGIKUTI PET
--- 6. LANJUT KE PET BERIKUTNYA
--- 7. DROP SEMUA PET
--- 8. RACCOON DI BACKPACK TIDAK DI-DROP
--- 9. JIKA TIDAK ADA PET
---    -> TWEEN KE CHARLOTTE
--- 10. ULANGI TERUS
+-- 2. CEK HARGA DARI BuyPrompt.ObjectText
+-- 3. JIKA HARGA >= 12,000,000 -> SKIP
+-- 4. JIKA HARGA < 12,000,000 -> TWEEN KE PET
+-- 5. FIRE BUY PROMPT
+-- 6. SETELAH PROMPT DIPANGGIL -> STOP MENGIKUTI PET
+-- 7. LANJUT KE PET BERIKUTNYA
+-- 8. DROP SEMUA PET
+-- 9. RACCOON DI BACKPACK TIDAK DI-DROP
+-- 10. JIKA TIDAK ADA PET -> TWEEN KE CHARLOTTE
+-- 11. ULANGI TERUS
 --
 -- SERVER HOP DIHAPUS
 --==================================================
@@ -36,6 +36,10 @@ local Networking = require(
 
 -- Kecepatan Tween
 local TWEEN_SPEED = 100
+
+-- Maksimal harga pet yang boleh dibeli
+-- Harga >= 12,000,000 akan di-SKIP
+local MAX_PET_PRICE = 22000
 
 -- Interval Main Loop
 local CHECK_DELAY = 2
@@ -99,6 +103,60 @@ local function GetRoot()
 end
 
 --==================================================
+-- PARSE HARGA DARI OBJECTTEXT
+--
+-- CONTOH:
+-- ¢50,000
+-- ¢1,500,000
+-- ¢12,000,000
+--
+-- HASIL:
+-- 50000
+-- 1500000
+-- 12000000
+--==================================================
+
+local function GetPetPrice(BuyPrompt)
+
+    if not BuyPrompt then
+        return nil
+    end
+
+    local ObjectText =
+        BuyPrompt.ObjectText or ""
+
+    if ObjectText == "" then
+        return nil
+    end
+
+    --==================================================
+    -- AMBIL HANYA ANGKA
+    --
+    -- ¢50,000
+    -- menjadi:
+    -- 50000
+    --==================================================
+
+    local PriceText =
+        ObjectText:gsub(
+            "[^%d]",
+            ""
+        )
+
+    if PriceText == "" then
+        return nil
+    end
+
+    local PetPrice =
+        tonumber(
+            PriceText
+        )
+
+    return PetPrice
+
+end
+
+--==================================================
 -- ADD PET TO BATCH
 --==================================================
 
@@ -157,14 +215,11 @@ end
 --==================================================
 -- TAKE / BUY PET
 --
--- TWEEN SPEED 100
+-- HARGA >= 12,000,000
+-- -> SKIP
 --
--- SETELAH SAMPAI:
--- FIRE BUY PROMPT
---
--- JIKA FIRE PROMPT BERHASIL:
--- LANGSUNG STOP
--- TIDAK MENGIKUTI PET LAGI
+-- HARGA < 12,000,000
+-- -> BELI
 --==================================================
 
 local function TakePet(Pet)
@@ -212,6 +267,74 @@ local function TakePet(Pet)
         return false
 
     end
+
+    --==================================================
+    -- CEK HARGA PET
+    --==================================================
+
+    local PetPrice =
+        GetPetPrice(
+            BuyPrompt
+        )
+
+    --==================================================
+    -- JIKA GAGAL BACA HARGA
+    -- SKIP AGAR AMAN
+    --==================================================
+
+    if not PetPrice then
+
+        warn(
+            "[SKIP PET] Gagal membaca harga:",
+            Pet.Name,
+            "ObjectText:",
+            BuyPrompt.ObjectText
+        )
+
+        return false
+
+    end
+
+    --==================================================
+    -- PRINT HARGA
+    --==================================================
+
+    print(
+        "[PET CHECK]",
+        Pet.Name,
+        "Price:",
+        PetPrice
+    )
+
+    --==================================================
+    -- JANGAN BELI JIKA HARGA >= 12 JUTA
+    --==================================================
+
+    if PetPrice >= MAX_PET_PRICE then
+
+        print(
+            "[SKIP PET]",
+            Pet.Name,
+            "Harga:",
+            PetPrice,
+            ">= Limit:",
+            MAX_PET_PRICE
+        )
+
+        return false
+
+    end
+
+    --==================================================
+    -- PET BOLEH DIBELI
+    --==================================================
+
+    print(
+        "[BUY PET]",
+        Pet.Name,
+        "Harga:",
+        PetPrice
+    )
 
     --==================================================
     -- GET PLAYER ROOT
@@ -286,7 +409,7 @@ local function TakePet(Pet)
     end
 
     --==================================================
-    -- PASTIKAN POSISI SUDAH DEKAT PET
+    -- PASTIKAN POSISI SUDAH DI PET
     --==================================================
 
     HRP.CFrame =
@@ -295,8 +418,8 @@ local function TakePet(Pet)
     --==================================================
     -- FIRE BUY PROMPT
     --
-    -- SETELAH INI KITA TIDAK AKAN
-    -- MENGIKUTI PET LAGI
+    -- SETELAH PROMPT DIPANGGIL
+    -- TIDAK AKAN MENGIKUTI PET LAGI
     --==================================================
 
     local Success =
@@ -310,11 +433,16 @@ local function TakePet(Pet)
 
     --==================================================
     -- PROMPT BERHASIL DIPANGGIL
-    --
-    -- LANGSUNG STOP FOLLOW PET
     --==================================================
 
     if Success then
+
+        print(
+            "[TAKE SUCCESS]",
+            Pet.Name,
+            "Price:",
+            PetPrice
+        )
 
         task.wait(
             AFTER_TAKE_DELAY
@@ -325,8 +453,13 @@ local function TakePet(Pet)
     end
 
     --==================================================
-    -- PROMPT GAGAL DIPANGGIL
+    -- PROMPT GAGAL
     --==================================================
+
+    warn(
+        "[TAKE FAILED]",
+        Pet.Name
+    )
 
     return false
 
@@ -372,7 +505,7 @@ local function ProcessBatch()
             and Pet.Parent then
 
             --==================================================
-            -- TAKE PET
+            -- TAKE / SKIP PET
             --==================================================
 
             TakePet(
@@ -380,8 +513,7 @@ local function ProcessBatch()
             )
 
             --==================================================
-            -- PET SUDAH SELESAI
-            -- TIDAK FOLLOW LAGI
+            -- LANJUT KE PET BERIKUTNYA
             --==================================================
 
             task.wait(
@@ -722,6 +854,11 @@ local function DropAllPets()
 
             if not IsRaccoonInBackpack then
 
+                print(
+                    "[DROP PET]",
+                    PetName or Pet.Name
+                )
+
                 DropPet(
                     Pet
                 )
@@ -733,7 +870,7 @@ local function DropAllPets()
             else
 
                 print(
-                    "[DROP PET] Skip Raccoon di Backpack:",
+                    "[SKIP DROP] Raccoon di Backpack:",
                     Pet.Name
                 )
 
@@ -820,7 +957,7 @@ local function TweenToCenterMap()
     end
 
     --==================================================
-    -- HITUNG DURASI TWEEN
+    -- HITUNG DURASI
     -- SPEED 100
     --==================================================
 
@@ -898,11 +1035,9 @@ while task.wait(
 
     --==================================================
     -- STEP 2
-    -- TAKE SEMUA PET
+    -- TAKE PET
     --
-    -- TWEEN SPEED 100
-    -- FIRE PROMPT
-    -- STOP FOLLOW SETELAH PROMPT
+    -- PET >= 12 JUTA AKAN DI-SKIP
     --==================================================
 
     ProcessBatch()
