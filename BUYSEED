@@ -1,43 +1,39 @@
-local Networking = require(game.ReplicatedStorage.SharedModules.Networking)
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Seeds = {
-    "Carrot",
-    "Strawberry",
-    "Blueberry",
-    "Tulip",
-    "Tomato",
-    "Apple",
-    "Bamboo",
-    "Corn",
-    "Cactus",
-    "Pineapple",
-    "Mushroom",
-    "Green Bean",
-    "Banana",
-    "Grape",
-    "Coconut",
-    "Mango",
-    "Rocket Pop",
-    "Dragon Fruit",
-    "Acorn",
-    "Cherry",
-    "Sunflower",
-    "Fire Fern",
-    "Venus Fly Trap",
-    "Pomegranate",
-    "Poison Apple",
-    "Venom Spitter",
-    "Briar Rose",
-    "Moon Bloom",
-    "Hypno Bloom",
-    "Dragon's Breath",
-    "Dragon\'s Breath",
-    "Sun Bloom",
-    "Star Fruit",
-}
+local LocalPlayer = Players.LocalPlayer
+local Networking = require(ReplicatedStorage.SharedModules.Networking)
 
-while task.wait(10) do
-    for _, SeedName in ipairs(Seeds) do
-        Networking.SeedShop.PurchaseSeed:Fire(SeedName)
+local SeedShop = LocalPlayer.PlayerGui:WaitForChild("SeedShop")
+local NormalShop = SeedShop.Frame.NormalShop
+
+local function GetStock(SeedFrame)
+    local MainFrame = SeedFrame:FindFirstChild("Main_Frame")
+
+    if not MainFrame then
+        return 0
+    end
+
+    local StockText = MainFrame:FindFirstChild("Stock_Text")
+
+    if not StockText then
+        return 0
+    end
+
+    local StockAmount = tonumber(string.match(StockText.Text, "x(%d+)"))
+
+    return StockAmount or 0
+end
+
+while task.wait(0.5) do
+    for _, SeedFrame in ipairs(NormalShop:GetChildren()) do
+        if SeedFrame:IsA("Frame") then
+            local SeedName = SeedFrame.Name
+            local Stock = GetStock(SeedFrame)
+
+            if Stock > 0 then
+                Networking.SeedShop.PurchaseSeed:Fire(SeedName)
+            end
+        end
     end
 end
