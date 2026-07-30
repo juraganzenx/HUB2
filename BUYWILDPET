@@ -1,1125 +1,255 @@
---==================================================
--- AUTO TAKE ALL PET
--- DROP ALL PET
--- TWEEN TO CHARLOTTE IF NO PET
---
--- LOGIC:
--- 1. SCAN SEMUA WILD PET
--- 2. CEK HARGA PET
--- 3. HARGA >= 12,000,000 -> SKIP
--- 4. HARGA < 12,000,000 -> TWEEN KE PET SPEED 100
--- 5. IKUTI POSISI PET TANPA WELD
--- 6. FIRE BUY PROMPT SAMPAI BERHASIL
--- 7. LANJUT PET BERIKUTNYA
--- 8. DROP SEMUA PET
--- 9. RACCOON DI BACKPACK TIDAK DI-DROP
--- 10. JIKA TIDAK ADA PET
---     -> TWEEN KE CHARLOTTE
--- 11. ULANGI TERUS
---
--- SERVER HOP DIHAPUS
---==================================================
+--BUY WILD SEBELUMNYA
+-------------------------------------------------
+-- SETTINGS
+--------------------------------------------------
+
+local CHECK_DELAY = 2
+local MIN_SHECKLES = 800
+
+local WHITELIST = {
+    ["Raccoon"] = true,
+    ["Big Frog"] = true,
+    ["Rainbow Frog"] = true,
+    ["Butterfly"] = true,
+}
+
+local SIZE_PETS = {
+    ["Bunny"] = true,
+    ["Frog"] = true,
+    ["Deer"] = true,
+    ["Robin"] = true,
+    ["Owl"] = true,
+    ["Bee"] = true,
+}
+
+-- Ganti dengan Discord Webhook kamu
+local DISCORD_WEBHOOK = "LINK_WEBHOOK"
+
+--------------------------------------------------
+-- SERVICES
+--------------------------------------------------
 
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 
-local Networking = require(
-    ReplicatedStorage.SharedModules.Networking
-)
+--------------------------------------------------
+-- SHECKLES CHECK
+--------------------------------------------------
 
---==================================================
--- CONFIG
---==================================================
+local function HasEnoughSheckles()
+    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+    if not leaderstats then
+        return false
+    end
 
--- Kecepatan Tween ke Pet
-local TWEEN_SPEED = 100
+    local sheckles = leaderstats:FindFirstChild("Sheckles")
+    if not sheckles then
+        return false
+    end
 
--- Batas harga pet
--- Harga >= 12,000,000 akan di-SKIP
-local MAX_PET_PRICE = 20000000
+    return sheckles.Value > MIN_SHECKLES
+end
 
--- Interval pengecekan
-local CHECK_DELAY = 2
+--------------------------------------------------
+-- GET ROOT
+--------------------------------------------------
 
--- Timeout Equip Pet
-local EQUIP_TIMEOUT = 5
+local function GetRoot()
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    return Character:WaitForChild("HumanoidRootPart")
+end
 
--- Timeout Drop Pet
-local DROP_TIMEOUT = 5
-
--- Delay antar percobaan BuyPrompt
-local TAKE_RETRY_DELAY = 0.2
-
--- Delay setelah pet berhasil diambil
-local AFTER_TAKE_DELAY = 0.2
-
--- Delay setelah selesai memproses satu pet
-local AFTER_PROCESS_DELAY = 0.5
-
--- Delay setelah Drop satu pet
-local AFTER_DROP_DELAY = 0.5
-
---==================================================
+--------------------------------------------------
 -- PATH
---==================================================
+--------------------------------------------------
 
 local WildPetSpawns = workspace
     :WaitForChild("Map")
     :WaitForChild("WildPetSpawns")
 
---==================================================
--- VARIABLES
---==================================================
+--------------------------------------------------
+-- DISCORD NOTIFICATION
+--------------------------------------------------
 
-local Batch = {}
+local req =
+    (syn and syn.request)
+    or request
+    or http_request
+    or (http and http.request)
+    or (fluxus and fluxus.request)
 
-local ProcessingBatch = false
+local Seen = {}
 
-local TweeningToCenter = false
-
---==================================================
--- GET CHARACTER
---==================================================
-
-local function GetCharacter()
-
-    return LocalPlayer.Character
-        or LocalPlayer.CharacterAdded:Wait()
-
-end
-
---==================================================
--- GET ROOT
---==================================================
-
-local function GetRoot()
-
-    local Character = GetCharacter()
-
-    return Character:WaitForChild(
-        "HumanoidRootPart"
-    )
-
-end
-
---==================================================
--- GET PET PRICE
---
--- Contoh ObjectText:
---
--- ¢50,000
--- ¢1,000,000
--- ¢12,000,000
---
--- HASIL:
---
--- 50000
--- 1000000
--- 12000000
---==================================================
-
-local function GetPetPrice(BuyPrompt)
-
-    if not BuyPrompt then
-
-        return nil
-
-    end
-
-    local ObjectText =
-        BuyPrompt.ObjectText or ""
-
-    if ObjectText == "" then
-
-        return nil
-
-    end
-
-    --==================================================
-    -- AMBIL SEMUA ANGKA DARI OBJECTTEXT
-    --==================================================
-
-    local PriceText =
-        ObjectText:gsub(
-            "[^%d]",
-            ""
-        )
-
-    if PriceText == "" then
-
-        return nil
-
-    end
-
-    local PetPrice =
-        tonumber(
-            PriceText
-        )
-
-    return PetPrice
-
-end
-
---==================================================
--- ADD PET TO BATCH
---==================================================
-
-local function AddToBatch(Pet)
-
-    if not Pet
-        or not Pet.Parent then
-
+local function SendDiscordNotification(petName)
+    if not req or DISCORD_WEBHOOK == "" then
         return
-
     end
 
-    --==================================================
-    -- CEGAH PET YANG SAMA MASUK BATCH 2X
-    --==================================================
-
-    for _, ExistingPet in ipairs(
-        Batch
-    ) do
-
-        if ExistingPet == Pet then
-
-            return
-
-        end
-
-    end
-
-    --==================================================
-    -- MASUKKAN PET KE BATCH
-    --==================================================
-
-    table.insert(
-        Batch,
-        Pet
+    local joinScript = string.format(
+        'game:GetService("TeleportService"):TeleportToPlaceInstance(%d, "%s", game.Players.LocalPlayer)',
+        game.PlaceId,
+        game.JobId
     )
 
-end
+    local embed = {
+        title = "🐾 Wild Pet Spawned",
+        color = 16766720,
 
---==================================================
--- SCAN SEMUA PET DI WILD PET SPAWNS
---==================================================
-
-local function ScanAllPets()
-
-    for _, Pet in ipairs(
-        WildPetSpawns:GetChildren()
-    ) do
-
-        AddToBatch(
-            Pet
-        )
-
-    end
-
-end
-
---==================================================
--- TAKE / BUY PET
---
--- TWEEN SPEED 100
--- TANPA WELD
--- TWEEN SEKALI KE PET
--- SETELAH SAMPAI:
--- IKUTI POSISI ROOTPART PET
--- FIRE BUY PROMPT SAMPAI PET HILANG
---==================================================
-
-local function TakePet(Pet)
-
-    if not Pet
-        or not Pet.Parent then
-
-        return false
-
-    end
-
-    --==================================================
-    -- GET ROOT PART PET
-    --==================================================
-
-    local RootPart =
-        Pet:FindFirstChild(
-            "RootPart"
-        )
-
-    if not RootPart then
-
-        return false
-
-    end
-
-    --==================================================
-    -- GET BUY PROMPT
-    --==================================================
-
-    local BuyPrompt =
-        RootPart:FindFirstChild(
-            "BuyPrompt"
-        )
-
-    if not BuyPrompt
-        or not BuyPrompt:IsA(
-            "ProximityPrompt"
-        ) then
-
-        return false
-
-    end
-
-    --==================================================
-    -- CEK HARGA PET
-    --==================================================
-
-    local PetPrice =
-        GetPetPrice(
-            BuyPrompt
-        )
-
-    --==================================================
-    -- JIKA GAGAL MEMBACA HARGA
-    -- SKIP PET
-    --==================================================
-
-    if not PetPrice then
-
-        return false
-
-    end
-
-    --==================================================
-    -- JANGAN BELI JIKA HARGA >= 12 JUTA
-    --==================================================
-
-    if PetPrice >= MAX_PET_PRICE then
-
-        return false
-
-    end
-
-    --==================================================
-    -- GET PLAYER ROOT
-    --==================================================
-
-    local HRP =
-        GetRoot()
-
-    --==================================================
-    -- HITUNG JARAK
-    --==================================================
-
-    local Distance = (
-        HRP.Position
-        - RootPart.Position
-    ).Magnitude
-
-    --==================================================
-    -- HITUNG DURASI TWEEN
-    -- SPEED 100
-    --==================================================
-
-    local Duration =
-        Distance / TWEEN_SPEED
-
-    --==================================================
-    -- TWEEN KE PET
-    --==================================================
-
-    local Tween =
-        TweenService:Create(
-
-            HRP,
-
-            TweenInfo.new(
-                Duration,
-                Enum.EasingStyle.Linear,
-                Enum.EasingDirection.Out
-            ),
-
+        fields = {
             {
-                CFrame =
-                    RootPart.CFrame
+                name = "👤 Username",
+                value = LocalPlayer.Name,
+                inline = true
+            },
+            {
+                name = "🏷️ Display Name",
+                value = LocalPlayer.DisplayName,
+                inline = true
+            },
+            {
+                name = "🐾 Wild Pet",
+                value = petName,
+                inline = false
+            },
+            {
+                name = "🎮 Place ID",
+                value = tostring(game.PlaceId),
+                inline = true
+            },
+            {
+                name = "🌐 Job ID",
+                value = tostring(game.JobId),
+                inline = false
+            },
+            {
+                name = "📋 Join Script",
+                value = "```lua\n" .. joinScript .. "\n```",
+                inline = false
             }
+        },
 
-        )
+        footer = {
+            text = "Wild Pet Notifier"
+        },
 
-    Tween:Play()
+        timestamp = DateTime.now():ToIsoDate(),
+    }
 
-    Tween.Completed:Wait()
-
-    --==================================================
-    -- CEK PET MASIH ADA
-    --==================================================
-
-    if not Pet
-        or not Pet.Parent then
-
-        return true
-
-    end
-
-    --==================================================
-    -- CEK ROOTPART MASIH ADA
-    --==================================================
-
-    if not RootPart
-        or not RootPart.Parent then
-
-        return false
-
-    end
-
-    --==================================================
-    -- POSISI AWAL TEPAT KE PET
-    --==================================================
-
-    HRP.CFrame =
-        RootPart.CFrame
-
-    --==================================================
-    -- TAKE LOOP
-    --
-    -- TIDAK MENGGUNAKAN WELD
-    --
-    -- PLAYER AKAN TERUS MENGIKUTI
-    -- POSISI ROOTPART PET
-    --
-    -- BUY PROMPT DIPANGGIL BERULANG
-    -- SAMPAI PET BERHASIL DIAMBIL
-    --==================================================
-
-    while true do
-
-        --==================================================
-        -- CEK PET SUDAH HILANG
-        --==================================================
-
-        if not Pet
-            or not Pet.Parent then
-
-            break
-
-        end
-
-        --==================================================
-        -- CEK ROOTPART MASIH ADA
-        --==================================================
-
-        if not RootPart
-            or not RootPart.Parent then
-
-            break
-
-        end
-
-        --==================================================
-        -- UPDATE POSISI PLAYER
-        -- MENGIKUTI POSISI PET
-        --==================================================
-
-        if HRP
-            and HRP.Parent then
-
-            HRP.CFrame =
-                RootPart.CFrame
-
-        end
-
-        --==================================================
-        -- FIRE BUY PROMPT
-        --==================================================
-
-        pcall(function()
-
-            fireproximityprompt(
-                BuyPrompt
-            )
-
-        end)
-
-        --==================================================
-        -- TUNGGU SEBELUM COBA LAGI
-        --==================================================
-
-        task.wait(
-            TAKE_RETRY_DELAY
-        )
-
-    end
-
-    --==================================================
-    -- PET SUDAH BERHASIL DIAMBIL
-    --==================================================
-
-    task.wait(
-        AFTER_TAKE_DELAY
-    )
-
-    return true
-
+    pcall(function()
+        req({
+            Url = DISCORD_WEBHOOK,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode({
+                username = "Wild Pet Notifier",
+                embeds = {embed}
+            })
+        })
+    end)
 end
 
---==================================================
--- PROCESS SEMUA PET DALAM BATCH
---==================================================
+--------------------------------------------------
+-- SEND NOTIFICATION WHEN PET SPAWNS
+--------------------------------------------------
 
-local function ProcessBatch()
+WildPetSpawns.ChildAdded:Connect(function(pet)
+    task.wait(0.1)
 
-    if ProcessingBatch then
+    local petName = pet:GetAttribute("PetName")
 
-        return
+    if petName and WHITELIST[petName] and not Seen[pet] then
+        Seen[pet] = true
 
+        print("[NOTIFY] " .. petName)
+        SendDiscordNotification(petName)
     end
+end)
 
-    if #Batch == 0 then
+WildPetSpawns.ChildRemoved:Connect(function(pet)
+    Seen[pet] = nil
+end)
 
-        return
+--------------------------------------------------
+-- AUTO BUY LOOP
+--------------------------------------------------
 
-    end
+local TweenService = game:GetService("TweenService")
+local TWEEN_SPEED = 16
 
-    ProcessingBatch = true
+while task.wait(CHECK_DELAY) do
 
-    --==================================================
-    -- PROSES PET SATU PER SATU
-    --==================================================
+    for _, pet in ipairs(WildPetSpawns:GetChildren()) do
+        local petName = pet:GetAttribute("PetName")
+        local shouldBuy = false
 
-    while #Batch > 0 do
-
-        local Pet =
-            table.remove(
-                Batch,
-                1
-            )
-
-        --==================================================
-        -- CEK PET MASIH VALID
-        --==================================================
-
-        if Pet
-            and Pet.Parent then
-
-            --==================================================
-            -- TWEEN SPEED 100
-            -- IKUTI PET
-            -- TAKE SAMPAI BERHASIL
-            --==================================================
-
-            TakePet(
-                Pet
-            )
-
-            --==================================================
-            -- DELAY SEBELUM PET BERIKUTNYA
-            --==================================================
-
-            task.wait(
-                AFTER_PROCESS_DELAY
-            )
-
-        end
-
-    end
-
-    ProcessingBatch = false
-
-end
-
---==================================================
--- GET SEMUA PET YANG DIMILIKI
--- BACKPACK + CHARACTER
---==================================================
-
-local function GetAllOwnedPets()
-
-    local Pets = {}
-
-    --==================================================
-    -- GET BACKPACK
-    --==================================================
-
-    local Backpack =
-        LocalPlayer:WaitForChild(
-            "Backpack"
-        )
-
-    --==================================================
-    -- SCAN BACKPACK
-    --==================================================
-
-    for _, Item in ipairs(
-        Backpack:GetChildren()
-    ) do
-
-        if Item:GetAttribute(
-            "Pet"
-        ) ~= nil then
-
-            table.insert(
-                Pets,
-                Item
-            )
-
-        end
-
-    end
-
-    --==================================================
-    -- GET CHARACTER
-    --==================================================
-
-    local Character =
-        LocalPlayer.Character
-
-    --==================================================
-    -- SCAN CHARACTER
-    -- PET YANG SEDANG EQUIP
-    --==================================================
-
-    if Character then
-
-        for _, Item in ipairs(
-            Character:GetChildren()
-        ) do
-
-            if Item:GetAttribute(
-                "Pet"
-            ) ~= nil then
-
-                table.insert(
-                    Pets,
-                    Item
-                )
-
+        -- Raccoon selalu boleh dibeli
+        if petName == "Raccoon" then
+            shouldBuy = true
+        else
+            -- Pet lain harus memenuhi minimal sheckles
+            if not HasEnoughSheckles() then
+                continue
             end
 
-        end
-
-    end
-
-    return Pets
-
-end
-
---==================================================
--- EQUIP PET
---==================================================
-
-local function EquipPet(Pet)
-
-    local Character =
-        GetCharacter()
-
-    --==================================================
-    -- SUDAH DI-EQUIP
-    --==================================================
-
-    if Pet.Parent
-        == Character then
-
-        return true
-
-    end
-
-    --==================================================
-    -- PET HARUS ADA DI BACKPACK
-    --==================================================
-
-    if Pet.Parent
-        ~= LocalPlayer.Backpack then
-
-        return false
-
-    end
-
-    --==================================================
-    -- GET HUMANOID
-    --==================================================
-
-    local Humanoid =
-        Character:FindFirstChildOfClass(
-            "Humanoid"
-        )
-
-    if not Humanoid then
-
-        return false
-
-    end
-
-    --==================================================
-    -- EQUIP TOOL
-    --==================================================
-
-    Humanoid:EquipTool(
-        Pet
-    )
-
-    --==================================================
-    -- TUNGGU SAMPAI MASUK CHARACTER
-    --==================================================
-
-    local StartTime =
-        os.clock()
-
-    while os.clock()
-        - StartTime
-        < EQUIP_TIMEOUT do
-
-        if Pet.Parent
-            == Character then
-
-            return true
-
-        end
-
-        task.wait(
-            0.1
-        )
-
-    end
-
-    return false
-
-end
-
---==================================================
--- DROP SATU PET
---==================================================
-
-local function DropPet(Pet)
-
-    if not Pet then
-
-        return false
-
-    end
-
-    --==================================================
-    -- AMBIL PET ID
-    --==================================================
-
-    local PetId =
-        Pet:GetAttribute(
-            "PetId"
-        )
-
-    if not PetId then
-
-        return false
-
-    end
-
-    --==================================================
-    -- EQUIP JIKA MASIH DI BACKPACK
-    --==================================================
-
-    if Pet.Parent
-        ~= LocalPlayer.Character then
-
-        local Equipped =
-            EquipPet(
-                Pet
-            )
-
-        if not Equipped then
-
-            return false
-
-        end
-
-    end
-
-    --==================================================
-    -- PASTIKAN SUDAH DI CHARACTER
-    --==================================================
-
-    if Pet.Parent
-        ~= LocalPlayer.Character then
-
-        return false
-
-    end
-
-    --==================================================
-    -- REQUEST DROP
-    --==================================================
-
-    local Success =
-        pcall(function()
-
-            Networking
-                .DroppedItem
-                .RequestDrop
-                :Fire(
-                    "Pets",
-                    PetId
-                )
-
-        end)
-
-    if not Success then
-
-        return false
-
-    end
-
-    --==================================================
-    -- TUNGGU PET HILANG
-    --==================================================
-
-    local StartTime =
-        os.clock()
-
-    while os.clock()
-        - StartTime
-        < DROP_TIMEOUT do
-
-        if not Pet.Parent then
-
-            return true
-
-        end
-
-        task.wait(
-            0.1
-        )
-
-    end
-
-    return false
-
-end
-
---==================================================
--- DROP SEMUA PET
---
--- RACCOON YANG ADA DI BACKPACK
--- TIDAK AKAN DI-DROP
---==================================================
-
-local function DropAllPets()
-
-    --==================================================
-    -- SCAN BACKPACK + CHARACTER
-    --==================================================
-
-    local Pets =
-        GetAllOwnedPets()
-
-    --==================================================
-    -- TIDAK ADA PET
-    --==================================================
-
-    if #Pets == 0 then
-
-        return
-
-    end
-
-    --==================================================
-    -- DROP SATU PER SATU
-    --==================================================
-
-    for _, Pet in ipairs(
-        Pets
-    ) do
-
-        if Pet
-            and Pet.Parent then
-
-            --==================================================
-            -- GET PET ATTRIBUTE
-            --==================================================
-
-            local PetName =
-                Pet:GetAttribute(
-                    "Pet"
-                )
-
-            --==================================================
-            -- CEK RACCOON DI BACKPACK
-            --==================================================
-
-            local IsRaccoonInBackpack =
-                PetName == "Raccoon"
-                and Pet.Parent
-                    == LocalPlayer.Backpack
-
-            --==================================================
-            -- SKIP RACCOON DI BACKPACK
-            --==================================================
-
-            if IsRaccoonInBackpack then
-
-                -- Jangan drop Raccoon
-
-            else
-
-                DropPet(
-                    Pet
-                )
-
-                task.wait(
-                    AFTER_DROP_DELAY
-                )
-
+            -- Pet whitelist
+            if petName and WHITELIST[petName] then
+                shouldBuy = true
             end
 
+            -- Bunny/Frog/Deer/Robin/Owl/Bee hanya jika punya Size
+            if petName and SIZE_PETS[petName] and pet:GetAttribute("Size") ~= nil then
+                shouldBuy = true
+            end
         end
 
-    end
+        if shouldBuy then
+            local root = pet:FindFirstChild("RootPart")
 
-    --==================================================
-    -- CEK ULANG PET
-    --==================================================
+            if root then
+                local prompt = root:FindFirstChild("BuyPrompt")
 
-    task.wait(
-        0.5
-    )
+                if prompt and prompt:IsA("ProximityPrompt") then
+                    local hrp = GetRoot()
 
-    local RemainingPets =
-        GetAllOwnedPets()
+                    local targetCFrame = root.CFrame
+                    local distance = (hrp.Position - targetCFrame.Position).Magnitude
+                    local duration = distance / TWEEN_SPEED
 
-    --==================================================
-    -- DROP ULANG PET YANG TERSISA
-    --
-    -- KECUALI RACCOON DI BACKPACK
-    --==================================================
-
-    if #RemainingPets > 0 then
-
-        for _, Pet in ipairs(
-            RemainingPets
-        ) do
-
-            if Pet
-                and Pet.Parent then
-
-                local PetName =
-                    Pet:GetAttribute(
-                        "Pet"
+                    local tween = TweenService:Create(
+                        hrp,
+                        TweenInfo.new(
+                            duration,
+                            Enum.EasingStyle.Linear,
+                            Enum.EasingDirection.Out
+                        ),
+                        {
+                            CFrame = targetCFrame
+                        }
                     )
 
-                local IsRaccoonInBackpack =
-                    PetName == "Raccoon"
-                    and Pet.Parent
-                        == LocalPlayer.Backpack
+                    tween:Play()
+                    tween.Completed:Wait()
 
-                if not IsRaccoonInBackpack then
+                    task.wait(0.5)
 
-                    DropPet(
-                        Pet
+                    pcall(function()
+                        fireproximityprompt(prompt)
+                    end)
+
+                    print(
+                        "[AUTO BUY] "
+                        .. tostring(petName)
+                        .. " | Size="
+                        .. tostring(pet:GetAttribute("Size"))
                     )
 
-                    task.wait(
-                        AFTER_DROP_DELAY
-                    )
-
+                    task.wait(0.2)
                 end
-
             end
-
         end
-
     end
-
-end
-
---==================================================
--- TWEEN KE CHARLOTTE
---
--- TARGET:
--- workspace.NPCS.Charlotte.HumanoidRootPart
---
--- SPEED:
--- 100
---==================================================
-
-local function TweenToCenterMap()
-
-    --==================================================
-    -- CEGAH TWEEN GANDA
-    --==================================================
-
-    if TweeningToCenter then
-
-        return
-
-    end
-
-    TweeningToCenter = true
-
-    --==================================================
-    -- GET PLAYER ROOT
-    --==================================================
-
-    local HRP =
-        GetRoot()
-
-    --==================================================
-    -- GET CHARLOTTE
-    --==================================================
-
-    local Charlotte =
-        workspace
-        :WaitForChild(
-            "NPCS"
-        )
-        :WaitForChild(
-            "Charlotte"
-        )
-
-    --==================================================
-    -- GET HUMANOID ROOT PART
-    --==================================================
-
-    local CharlotteRoot =
-        Charlotte:WaitForChild(
-            "HumanoidRootPart"
-        )
-
-    --==================================================
-    -- HITUNG JARAK
-    --==================================================
-
-    local Distance = (
-        HRP.Position
-        - CharlotteRoot.Position
-    ).Magnitude
-
-    --==================================================
-    -- JIKA SUDAH DEKAT
-    --==================================================
-
-    if Distance <= 2 then
-
-        TweeningToCenter = false
-
-        return
-
-    end
-
-    --==================================================
-    -- HITUNG DURASI TWEEN
-    -- SPEED 100
-    --==================================================
-
-    local Duration =
-        Distance / TWEEN_SPEED
-
-    --==================================================
-    -- TWEEN KE CHARLOTTE
-    --==================================================
-
-    local Tween =
-        TweenService:Create(
-
-            HRP,
-
-            TweenInfo.new(
-                Duration,
-                Enum.EasingStyle.Linear,
-                Enum.EasingDirection.Out
-            ),
-
-            {
-                CFrame =
-                    CharlotteRoot.CFrame
-            }
-
-        )
-
-    Tween:Play()
-
-    Tween.Completed:Wait()
-
-    --==================================================
-    -- SELESAI
-    --==================================================
-
-    TweeningToCenter = false
-
-end
-
---==================================================
--- PET BARU MASUK WILD PET SPAWNS
---==================================================
-
-WildPetSpawns.ChildAdded:Connect(
-    function(Pet)
-
-        task.wait(
-            0.1
-        )
-
-        AddToBatch(
-            Pet
-        )
-
-    end
-)
-
---==================================================
--- MAIN LOOP
---
--- TIDAK ADA SERVER HOP
---==================================================
-
-while task.wait(
-    CHECK_DELAY
-) do
-
-    --==================================================
-    -- STEP 1
-    -- SCAN SEMUA PET
-    --==================================================
-
-    ScanAllPets()
-
-    --==================================================
-    -- STEP 2
-    -- TAKE SEMUA PET
-    --
-    -- PET >= 12 JUTA DI-SKIP
-    --==================================================
-
-    ProcessBatch()
-
-    --==================================================
-    -- STEP 3
-    -- DROP SEMUA PET
-    --
-    -- RACCOON DI BACKPACK DI-SKIP
-    --==================================================
-
-    DropAllPets()
-
-    --==================================================
-    -- STEP 4
-    -- SCAN ULANG
-    --==================================================
-
-    ScanAllPets()
-
-    --==================================================
-    -- STEP 5
-    -- JIKA TIDAK ADA PET
-    -- TWEEN KE CHARLOTTE
-    --==================================================
-
-    if #WildPetSpawns:GetChildren() == 0
-        and #Batch == 0
-        and not ProcessingBatch then
-
-        TweenToCenterMap()
-
-    end
-
 end
