@@ -1,255 +1,137 @@
---BUY WILD SEBELUMNYA
--------------------------------------------------
--- SETTINGS
---------------------------------------------------
-
-local CHECK_DELAY = 2
-local MIN_SHECKLES = 800
-
-local WHITELIST = {
-    ["Raccoon"] = true,
-    ["Big Frog"] = true,
-    ["Rainbow Frog"] = true,
-    ["Butterfly"] = true,
-}
-
-local SIZE_PETS = {
-    ["Bunny"] = true,
-    ["Frog"] = true,
-    ["Deer"] = true,
-    ["Robin"] = true,
-    ["Owl"] = true,
-    ["Bee"] = true,
-}
-
--- Ganti dengan Discord Webhook kamu
-local DISCORD_WEBHOOK = "LINK_WEBHOOK"
-
---------------------------------------------------
--- SERVICES
---------------------------------------------------
-
 local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
 
-local LocalPlayer = Players.LocalPlayer
+local Player = Players.LocalPlayer
+
+local TWEEN_SPEED = 50
+local HEIGHT_OFFSET = 3
+local WAIT_AFTER_TWEEN = 0.2
+
+local PartyLeaves = workspace:WaitForChild("PartyLeaves")
+local PartyPointDrops = workspace:WaitForChild("PartyPointDrops")
 
 --------------------------------------------------
--- SHECKLES CHECK
+-- GET CHARACTER
 --------------------------------------------------
 
-local function HasEnoughSheckles()
-    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-    if not leaderstats then
-        return false
-    end
-
-    local sheckles = leaderstats:FindFirstChild("Sheckles")
-    if not sheckles then
-        return false
-    end
-
-    return sheckles.Value > MIN_SHECKLES
+local function GetCharacter()
+    return Player.Character or Player.CharacterAdded:Wait()
 end
 
 --------------------------------------------------
--- GET ROOT
+-- GET ALL PARTS
 --------------------------------------------------
 
-local function GetRoot()
-    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    return Character:WaitForChild("HumanoidRootPart")
+local function GetAllParts()
+    local parts = {}
+
+    for _, obj in ipairs(PartyLeaves:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            table.insert(parts, obj)
+        end
+    end
+
+    for _, obj in ipairs(PartyPointDrops:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            table.insert(parts, obj)
+        end
+    end
+
+    return parts
 end
 
 --------------------------------------------------
--- PATH
+-- FIND NEAREST PART
 --------------------------------------------------
 
-local WildPetSpawns = workspace
-    :WaitForChild("Map")
-    :WaitForChild("WildPetSpawns")
+local function GetNearestPart(parts, position)
+    local nearestPart = nil
+    local nearestDistance = math.huge
+
+    for _, part in ipairs(parts) do
+        if part and part.Parent then
+            local distance = (part.Position - position).Magnitude
+
+            if distance < nearestDistance then
+                nearestDistance = distance
+                nearestPart = part
+            end
+        end
+    end
+
+    return nearestPart
+end
 
 --------------------------------------------------
--- DISCORD NOTIFICATION
+-- TWEEN TO PART
 --------------------------------------------------
 
-local req =
-    (syn and syn.request)
-    or request
-    or http_request
-    or (http and http.request)
-    or (fluxus and fluxus.request)
+local function TweenToPart(part)
+    local Character = GetCharacter()
+    local HRP = Character:FindFirstChild("HumanoidRootPart")
 
-local Seen = {}
-
-local function SendDiscordNotification(petName)
-    if not req or DISCORD_WEBHOOK == "" then
+    if not HRP or not part then
         return
     end
 
-    local joinScript = string.format(
-        'game:GetService("TeleportService"):TeleportToPlaceInstance(%d, "%s", game.Players.LocalPlayer)',
-        game.PlaceId,
-        game.JobId
+    local targetCFrame = part.CFrame + Vector3.new(0, HEIGHT_OFFSET, 0)
+
+    local distance = (HRP.Position - part.Position).Magnitude
+    local duration = distance / TWEEN_SPEED
+
+    local tween = TweenService:Create(
+        HRP,
+        TweenInfo.new(
+            duration,
+            Enum.EasingStyle.Linear,
+            Enum.EasingDirection.InOut
+        ),
+        {
+            CFrame = targetCFrame
+        }
     )
 
-    local embed = {
-        title = "🐾 Wild Pet Spawned",
-        color = 16766720,
-
-        fields = {
-            {
-                name = "👤 Username",
-                value = LocalPlayer.Name,
-                inline = true
-            },
-            {
-                name = "🏷️ Display Name",
-                value = LocalPlayer.DisplayName,
-                inline = true
-            },
-            {
-                name = "🐾 Wild Pet",
-                value = petName,
-                inline = false
-            },
-            {
-                name = "🎮 Place ID",
-                value = tostring(game.PlaceId),
-                inline = true
-            },
-            {
-                name = "🌐 Job ID",
-                value = tostring(game.JobId),
-                inline = false
-            },
-            {
-                name = "📋 Join Script",
-                value = "```lua\n" .. joinScript .. "\n```",
-                inline = false
-            }
-        },
-
-        footer = {
-            text = "Wild Pet Notifier"
-        },
-
-        timestamp = DateTime.now():ToIsoDate(),
-    }
-
-    pcall(function()
-        req({
-            Url = DISCORD_WEBHOOK,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = HttpService:JSONEncode({
-                username = "Wild Pet Notifier",
-                embeds = {embed}
-            })
-        })
-    end)
+    tween:Play()
+    tween.Completed:Wait()
 end
 
 --------------------------------------------------
--- SEND NOTIFICATION WHEN PET SPAWNS
+-- MAIN
 --------------------------------------------------
 
-WildPetSpawns.ChildAdded:Connect(function(pet)
-    task.wait(0.1)
+while true do
 
-    local petName = pet:GetAttribute("PetName")
+    local parts = GetAllParts()
 
-    if petName and WHITELIST[petName] and not Seen[pet] then
-        Seen[pet] = true
+    while #parts > 0 do
 
-        print("[NOTIFY] " .. petName)
-        SendDiscordNotification(petName)
-    end
-end)
+        local Character = GetCharacter()
+        local HRP = Character:FindFirstChild("HumanoidRootPart")
 
-WildPetSpawns.ChildRemoved:Connect(function(pet)
-    Seen[pet] = nil
-end)
+        if not HRP then
+            break
+        end
 
---------------------------------------------------
--- AUTO BUY LOOP
---------------------------------------------------
+        -- Cari yang paling dekat dari posisi sekarang
+        local nearestPart = GetNearestPart(parts, HRP.Position)
 
-local TweenService = game:GetService("TweenService")
-local TWEEN_SPEED = 16
+        if not nearestPart then
+            break
+        end
 
-while task.wait(CHECK_DELAY) do
+        -- Tween ke part terdekat
+        TweenToPart(nearestPart)
 
-    for _, pet in ipairs(WildPetSpawns:GetChildren()) do
-        local petName = pet:GetAttribute("PetName")
-        local shouldBuy = false
-
-        -- Raccoon selalu boleh dibeli
-        if petName == "Raccoon" then
-            shouldBuy = true
-        else
-            -- Pet lain harus memenuhi minimal sheckles
-            if not HasEnoughSheckles() then
-                continue
-            end
-
-            -- Pet whitelist
-            if petName and WHITELIST[petName] then
-                shouldBuy = true
-            end
-
-            -- Bunny/Frog/Deer/Robin/Owl/Bee hanya jika punya Size
-            if petName and SIZE_PETS[petName] and pet:GetAttribute("Size") ~= nil then
-                shouldBuy = true
+        -- Hapus dari daftar supaya tidak dikunjungi lagi
+        for i, part in ipairs(parts) do
+            if part == nearestPart then
+                table.remove(parts, i)
+                break
             end
         end
 
-        if shouldBuy then
-            local root = pet:FindFirstChild("RootPart")
-
-            if root then
-                local prompt = root:FindFirstChild("BuyPrompt")
-
-                if prompt and prompt:IsA("ProximityPrompt") then
-                    local hrp = GetRoot()
-
-                    local targetCFrame = root.CFrame
-                    local distance = (hrp.Position - targetCFrame.Position).Magnitude
-                    local duration = distance / TWEEN_SPEED
-
-                    local tween = TweenService:Create(
-                        hrp,
-                        TweenInfo.new(
-                            duration,
-                            Enum.EasingStyle.Linear,
-                            Enum.EasingDirection.Out
-                        ),
-                        {
-                            CFrame = targetCFrame
-                        }
-                    )
-
-                    tween:Play()
-                    tween.Completed:Wait()
-
-                    task.wait(0.5)
-
-                    pcall(function()
-                        fireproximityprompt(prompt)
-                    end)
-
-                    print(
-                        "[AUTO BUY] "
-                        .. tostring(petName)
-                        .. " | Size="
-                        .. tostring(pet:GetAttribute("Size"))
-                    )
-
-                    task.wait(0.2)
-                end
-            end
-        end
+        task.wait(WAIT_AFTER_TWEEN)
     end
+
+    task.wait(1)
 end
