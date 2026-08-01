@@ -1,14 +1,25 @@
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
 local Player = Players.LocalPlayer
 
+--------------------------------------------------
+-- SETTINGS
+--------------------------------------------------
+
 local TWEEN_SPEED = 50
 local HEIGHT_OFFSET = 3
 local WAIT_AFTER_TWEEN = 0.2
+local RESCAN_DELAY = 1
+
+--------------------------------------------------
+-- FOLDERS
+--------------------------------------------------
 
 local PartyLeaves = workspace:WaitForChild("PartyLeaves")
 local PartyPointDrops = workspace:WaitForChild("PartyPointDrops")
+local DiscoPartyPoint = workspace:WaitForChild("DiscoPartyPoint")
 
 --------------------------------------------------
 -- GET CHARACTER
@@ -25,15 +36,17 @@ end
 local function GetAllParts()
     local parts = {}
 
-    for _, obj in ipairs(PartyLeaves:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            table.insert(parts, obj)
-        end
-    end
+    local folders = {
+        PartyLeaves,
+        PartyPointDrops,
+        DiscoPartyPoint
+    }
 
-    for _, obj in ipairs(PartyPointDrops:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            table.insert(parts, obj)
+    for _, folder in ipairs(folders) do
+        for _, obj in ipairs(folder:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                table.insert(parts, obj)
+            end
         end
     end
 
@@ -71,13 +84,15 @@ local function TweenToPart(part)
     local HRP = Character:FindFirstChild("HumanoidRootPart")
 
     if not HRP or not part then
-        return
+        return false
     end
 
-    local targetCFrame = part.CFrame + Vector3.new(0, HEIGHT_OFFSET, 0)
-
     local distance = (HRP.Position - part.Position).Magnitude
+
     local duration = distance / TWEEN_SPEED
+
+    local targetCFrame =
+        part.CFrame + Vector3.new(0, HEIGHT_OFFSET, 0)
 
     local tween = TweenService:Create(
         HRP,
@@ -93,10 +108,12 @@ local function TweenToPart(part)
 
     tween:Play()
     tween.Completed:Wait()
+
+    return true
 end
 
 --------------------------------------------------
--- MAIN
+-- MAIN LOOP
 --------------------------------------------------
 
 while true do
@@ -112,17 +129,29 @@ while true do
             break
         end
 
-        -- Cari yang paling dekat dari posisi sekarang
-        local nearestPart = GetNearestPart(parts, HRP.Position)
+        --------------------------------------------------
+        -- CARI PART TERDEKAT
+        --------------------------------------------------
+
+        local nearestPart = GetNearestPart(
+            parts,
+            HRP.Position
+        )
 
         if not nearestPart then
             break
         end
 
-        -- Tween ke part terdekat
+        --------------------------------------------------
+        -- TWEEN
+        --------------------------------------------------
+
         TweenToPart(nearestPart)
 
-        -- Hapus dari daftar supaya tidak dikunjungi lagi
+        --------------------------------------------------
+        -- HAPUS DARI LIST
+        --------------------------------------------------
+
         for i, part in ipairs(parts) do
             if part == nearestPart then
                 table.remove(parts, i)
@@ -133,5 +162,10 @@ while true do
         task.wait(WAIT_AFTER_TWEEN)
     end
 
-    task.wait(1)
+    --------------------------------------------------
+    -- SEMUA PART SUDAH DIKUNJUNGI
+    -- SCAN ULANG
+    --------------------------------------------------
+
+    task.wait(RESCAN_DELAY)
 end
