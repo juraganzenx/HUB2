@@ -1,213 +1,29 @@
---DESTROY PLOT BISA HARVEST V5
-
-local Players = game:GetService("Players")
-
-local LocalPlayer = Players.LocalPlayer
-
+--DESTROY ALL PLOT BUT TETEP BISA HARVEST
 local Gardens = workspace:WaitForChild("Gardens")
-local DroppedItems = workspace:WaitForChild("DroppedItems")
-
-
---------------------------------------------------
--- DESTROY PLAYERS KECUALI LOCALPLAYER
---------------------------------------------------
-
-local function DestroyOtherPlayer(Player)
-
-    if Player == LocalPlayer then
-        return
-    end
-
-    if Player.Character then
-        Player.Character:Destroy()
-    end
-end
-
-
--- Destroy player yang sudah ada
-for _, Player in ipairs(Players:GetPlayers()) do
-    DestroyOtherPlayer(Player)
-end
-
-
--- Destroy character player yang baru spawn
-Players.PlayerAdded:Connect(function(Player)
-
-    if Player == LocalPlayer then
-        return
-    end
-
-    Player.CharacterAdded:Connect(function(Character)
-
-        task.defer(function()
-
-            if Character.Parent then
-                Character:Destroy()
-            end
-
-        end)
-
-    end)
-
-end)
-
-
---------------------------------------------------
--- DESTROY DROPPED ITEMS VISUAL
---------------------------------------------------
-
-local function DestroyDroppedVisual(Item)
-
-    local Visual = Item:FindFirstChild("Visual")
-
-    if Visual and Visual:IsA("Model") then
-        Visual:Destroy()
-    end
-
-end
-
-
-for _, Item in ipairs(DroppedItems:GetChildren()) do
-    DestroyDroppedVisual(Item)
-end
-
-
-DroppedItems.ChildAdded:Connect(function(Item)
-
-    task.wait()
-
-    if Item.Parent then
-        DestroyDroppedVisual(Item)
-    end
-
-    Item.ChildAdded:Connect(function(Child)
-
-        if Child.Name == "Visual" and Child:IsA("Model") then
-            Child:Destroy()
-        end
-
-    end)
-
-end)
-
-
-
---------------------------------------------------
--- DESTROY PLOT KECUALI HARVESTPART DAN SIGNS
---------------------------------------------------
-
-local function IsInsideProtectedFolder(Obj, Plot)
-
-    local Parent = Obj.Parent
-
-    while Parent and Parent ~= Plot do
-
-        -- Jangan destroy apapun di dalam HarvestPart
-        if Parent.Name == "HarvestPart" then
-            return true
-        end
-
-        -- Jangan destroy apapun di dalam Signs
-        if Parent.Name == "Signs" then
-            return true
-        end
-
-        Parent = Parent.Parent
-
-    end
-
-    return false
-end
-
-
-
-local function ProcessPlot(Plot)
-
-    --------------------------------------------------
-    -- DESTROY OBJECT YANG SUDAH ADA
-    --------------------------------------------------
-
-    for _, Obj in ipairs(Plot:GetDescendants()) do
-
-        -- Jangan destroy HarvestPart dan Signs
-        if Obj.Name == "HarvestPart" or Obj.Name == "Signs" then
-            continue
-        end
-
-
-        -- Jangan destroy isi HarvestPart dan Signs
-        if IsInsideProtectedFolder(Obj, Plot) then
-            continue
-        end
-
-
-        -- Destroy BasePart
-        if Obj:IsA("BasePart") then
-            Obj:Destroy()
-        end
-
-    end
-
-
-
-    --------------------------------------------------
-    -- DESTROY OBJECT BARU YANG MASUK
-    --------------------------------------------------
-
-    Plot.DescendantAdded:Connect(function(Obj)
-
-        -- Jangan proses HarvestPart dan Signs
-        if Obj.Name == "HarvestPart" or Obj.Name == "Signs" then
-            return
-        end
-
-
-        task.defer(function()
-
-            if not Obj.Parent then
-                return
-            end
-
-
-            -- Jangan destroy isi HarvestPart dan Signs
-            if IsInsideProtectedFolder(Obj, Plot) then
-                return
-            end
-
-
-            -- Destroy BasePart baru
-            if Obj:IsA("BasePart") and Obj.Parent then
-                Obj:Destroy()
-            end
-
-        end)
-
-    end)
-
-end
-
-
-
---------------------------------------------------
--- INIT PLOT
---------------------------------------------------
 
 for _, Plot in ipairs(Gardens:GetChildren()) do
-    ProcessPlot(Plot)
-end
+    for _, Obj in ipairs(Plot:GetDescendants()) do
+        -- Jangan hapus HarvestPart dan semua child-nya
+        if Obj.Name == "HarvestPart" then
+            continue
+        end
 
+        -- Cek apakah object ini berada di dalam HarvestPart
+        local IsInsideHarvestPart = false
+        local Parent = Obj.Parent
 
+        while Parent and Parent ~= Plot do
+            if Parent.Name == "HarvestPart" then
+                IsInsideHarvestPart = true
+                break
+            end
+            Parent = Parent.Parent
+        end
 
---------------------------------------------------
--- PLOT BARU
---------------------------------------------------
-
-Gardens.ChildAdded:Connect(function(Plot)
-
-    task.wait(1)
-
-    if Plot.Parent then
-        ProcessPlot(Plot)
+        if not IsInsideHarvestPart then
+            if Obj:IsA("BasePart") then
+                Obj:Destroy()
+            end
+        end
     end
-
-end)
+end
